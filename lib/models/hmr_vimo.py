@@ -14,8 +14,6 @@ from .modules import *
 from .smpl import SMPL
 from ..pipeline.tools import parse_chunks
 
-autocast = torch.cuda.amp.autocast
-
 
 class HMR_VIMO(nn.Module):
     def __init__(self, cfg=None, device="cpu", **kwargs):

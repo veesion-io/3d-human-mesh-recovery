@@ -12,21 +12,6 @@ from detectron2.config import LazyConfig
 from lib.pipeline.deva_track import get_deva_tracker, track_with_mask, flush_buffer
 
 
-if torch.cuda.is_available():
-    autocast = torch.cuda.amp.autocast
-else:
-
-    class autocast:
-        def __init__(self, enabled=True):
-            pass
-
-        def __enter__(self):
-            pass
-
-        def __exit__(self, *args):
-            pass
-
-
 def video2frames(vidfile, save_folder):
     """Convert input video to images"""
     count = 0
