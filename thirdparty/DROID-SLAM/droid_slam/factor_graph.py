@@ -216,7 +216,7 @@ class FactorGraph:
         """run update operator on factor graph"""
 
         # motion features
-        with torch.cuda.amp.autocast(enabled=False):
+        with torch.amp.autocast("cuda"):
             coords1, mask = self.video.reproject(self.ii, self.jj)
             motn = torch.cat([coords1 - self.coords0, self.target - coords1], dim=-1)
             motn = motn.permute(0, 1, 4, 2, 3).clamp(-64.0, 64.0)
@@ -244,7 +244,7 @@ class FactorGraph:
         if t0 is None:
             t0 = max(1, self.ii.min().item() + 1)
 
-        with torch.cuda.amp.autocast(enabled=False):
+        with torch.amp.autocast("cuda"):
             self.target = coords1 + delta.to(dtype=torch.float)
             self.weight = weight.to(dtype=torch.float)
 
@@ -301,7 +301,7 @@ class FactorGraph:
         print("Global BA Iteration with {} steps".format(steps))
         for step in range(steps):
             # print("Global BA Iteration #{}".format(step+1))
-            with torch.cuda.amp.autocast(enabled=False):
+            with torch.amp.autocast("cuda"):
                 coords1, mask = self.video.reproject(self.ii, self.jj)
                 motn = torch.cat(
                     [coords1 - self.coords0, self.target - coords1], dim=-1
@@ -319,7 +319,7 @@ class FactorGraph:
                     coords1[:, v], rig * iis, rig * jjs + (iis == jjs).long()
                 )
 
-                with torch.cuda.amp.autocast(enabled=True):
+                with torch.amp.autocast("cuda"):
                     net, delta, weight, damping, upmask = self.update_op(
                         self.net[:, v],
                         self.video.inps[None, iis],
