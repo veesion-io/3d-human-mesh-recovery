@@ -96,7 +96,7 @@ class FactorGraph:
         self.net = None
         self.inp = None
 
-    @torch.cuda.amp.autocast(enabled=True)
+    @torch.amp.autocast("cuda")
     def add_factors(self, ii, jj, remove=False):
         """add edges to factor graph"""
 
@@ -149,7 +149,7 @@ class FactorGraph:
         self.target = torch.cat([self.target, target], 1)
         self.weight = torch.cat([self.weight, weight], 1)
 
-    @torch.cuda.amp.autocast(enabled=True)
+    @torch.amp.autocast("cuda")
     def rm_factors(self, mask, store=False):
         """drop edges from factor graph"""
 
@@ -176,7 +176,7 @@ class FactorGraph:
         self.target = self.target[:, ~mask]
         self.weight = self.weight[:, ~mask]
 
-    @torch.cuda.amp.autocast(enabled=True)
+    @torch.amp.autocast("cuda")
     def rm_keyframe(self, ix):
         """drop edges from factor graph"""
 
@@ -209,7 +209,7 @@ class FactorGraph:
         self.jj[self.jj >= ix] -= 1
         self.rm_factors(m, store=False)
 
-    @torch.cuda.amp.autocast(enabled=True)
+    @torch.amp.autocast("cuda")
     def update(
         self, t0=None, t1=None, itrs=3, use_inactive=False, EP=1e-7, motion_only=False
     ):
