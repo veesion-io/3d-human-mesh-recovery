@@ -29,4 +29,4 @@ pip install pytorch-minimize
 pip install imageio[ffmpeg]
 pip install numpy==1.23
 pip install gdown
-
+pip install torch_scatter colorama
