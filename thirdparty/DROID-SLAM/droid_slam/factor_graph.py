@@ -286,7 +286,7 @@ class FactorGraph:
 
         self.age += 1
 
-    @torch.cuda.amp.autocast(enabled=False)
+    @torch.amp.autocast("cuda")
     def update_lowmem(
         self, t0=None, t1=None, itrs=2, use_inactive=False, EP=1e-7, steps=8
     ):
