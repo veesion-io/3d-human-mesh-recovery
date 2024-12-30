@@ -1,6 +1,6 @@
-# conda remove -n tram --all -y
-# conda create -n tram python=3.10 -y
-# conda activate tram
+conda remove -n tram --all -y
+conda create -n tram python=3.10 -y
+conda activate tram
 
 conda install nvidia/label/cuda-11.8.0::cuda-toolkit -y # you can disable this if you already have cuda-11.8
 conda install pytorch==2.0.0 torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia -y
