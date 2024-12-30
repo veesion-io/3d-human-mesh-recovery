@@ -11,7 +11,9 @@ from pycocotools import mask as masktool
 
 from lib.pipeline import video2frames, detect_segment_track, visualize_tram
 from lib.camera import run_metric_slam, calibrate_intrinsics
+import warnings
 
+warnings.simplefilter(action="ignore", category=FutureWarning)
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
