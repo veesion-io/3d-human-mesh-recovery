@@ -4,7 +4,7 @@ conda activate tram
 
 conda install nvidia/label/cuda-11.8.0::cuda-toolkit -y # you can disable this if you already have cuda-11.8
 conda install pytorch==2.0.0 torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia -y
-pip install 'git+https://github.com/facebookresearch/detectron2.git@a59f05630a8f205756064244bf5beb8661f96180'
+# pip install 'git+https://github.com/facebookresearch/detectron2.git@a59f05630a8f205756064244bf5beb8661f96180'
 pip install "git+https://github.com/facebookresearch/pytorch3d.git@stable"
 
 conda install pytorch-scatter -c pyg
@@ -20,7 +20,7 @@ pip install chumpy
 pip install einops
 pip install plyfile
 pip install pyrender
-pip install segment_anything
+git clone https://github.com/facebookresearch/sam2.git && cd sam2 && pip install -e . && cd ..
 pip install scikit-image
 pip install smplx
 pip install timm==0.6.7
@@ -30,3 +30,4 @@ pip install imageio[ffmpeg]
 pip install numpy==1.23
 pip install gdown
 pip install torch_scatter colorama
+pip install onnxruntime-gpu

@@ -4,11 +4,8 @@ import numpy as np
 import torch
 import torchvision
 
-from segment_anything import SamPredictor, sam_model_registry
 from pycocotools import mask as masktool
 
-from lib.utils.utils_detectron2 import DefaultPredictor_Lazy
-from detectron2.config import LazyConfig
 from lib.pipeline.deva_track import get_deva_tracker, track_with_mask, flush_buffer
 
 
@@ -27,6 +24,88 @@ def video2frames(vidfile, save_folder):
     return count
 
 
+import os
+import os.path as osp
+import time
+import cv2
+import torch
+import numpy as np
+import sys
+import onnxruntime as ort
+
+
+def preprocessing(
+    image,
+    new_shape,
+    image_information,
+    color=(114, 114, 114),
+    auto=False,
+    scaleup=True,
+    stride=32,
+):
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    shape = image.shape[:2]
+    if isinstance(new_shape, int):
+        new_shape = (new_shape, new_shape)
+
+    ratio = min(new_shape[0] / shape[0], new_shape[1] / shape[1])
+    if not scaleup:
+        ratio = min(ratio, 1.0)
+
+    new_unpad = int(round(shape[1] * ratio)), int(round(shape[0] * ratio))
+    dw, dh = new_shape[1] - new_unpad[0], new_shape[0] - new_unpad[1]
+
+    if auto:
+        dw, dh = np.mod(dw, stride), np.mod(dh, stride)
+
+    dw /= 2
+    dh /= 2
+
+    if shape[::-1] != new_unpad:
+        image = cv2.resize(image, new_unpad, interpolation=cv2.INTER_LINEAR)
+    top, bottom = int(round(dh - 0.1)), int(round(dh + 0.1))
+    left, right = int(round(dw - 0.1)), int(round(dw + 0.1))
+    image = cv2.copyMakeBorder(
+        image, top, bottom, left, right, cv2.BORDER_CONSTANT, value=color
+    )
+    image_information["ratio"] = ratio
+    image_information["dwdh"] = (dw, dh)
+    if image_information["preprocessing"]:
+        image = image.transpose((2, 0, 1))
+        image = np.ascontiguousarray(image)
+
+        image = image.astype(np.float32)
+        image /= 255
+    image = np.expand_dims(image, 0)
+    return image, image_information
+
+
+def postprocessing(outputs, image_information):
+    dwdh, ratio = image_information["dwdh"], image_information["ratio"]
+    scaled_output = []
+    for i, (batch_id, x0, y0, x1, y1, cls_id, score) in enumerate(outputs):
+        box = np.array([x0, y0, x1, y1])
+        box -= np.array(dwdh * 2)
+        box /= ratio
+        box = box.round().astype(np.int32)
+        cls_id = int(cls_id)
+        score = round(float(score), 3)
+        scaled_output.append(
+            {
+                "bbox": box,
+                "cls_id": cls_id,
+                "score": score,
+            }
+        )
+
+    return scaled_output
+
+
+import onnxruntime as ort
+from sam2.build_sam import build_sam2
+from sam2.sam2_image_predictor import SAM2ImagePredictor
+
+
 def detect_segment_track(
     imgfiles, out_path, thresh=0.5, min_size=None, device="cuda", save_vos=True
 ):
@@ -35,18 +114,18 @@ def detect_segment_track(
     Segmentation: SAM.
     Tracking: DEVA-Track-Anything.
     """
-    # ViTDet
-    cfg_path = "data/pretrain/cascade_mask_rcnn_vitdet_h_75ep.py"
-    detectron2_cfg = LazyConfig.load(str(cfg_path))
-    detectron2_cfg.train.init_checkpoint = "https://dl.fbaipublicfiles.com/detectron2/ViTDet/COCO/cascade_mask_rcnn_vitdet_h/f328730692/model_final_f05665.pkl"
-    for i in range(3):
-        detectron2_cfg.model.roi_heads.box_predictors[i].test_score_thresh = 0.25
-    detector = DefaultPredictor_Lazy(detectron2_cfg)
+    # People detector
+    detector = ort.InferenceSession(
+        "heavy_best_yolo.onnx",
+        providers=["CUDAExecutionProvider", "CPUExecutionProvider"],
+    )
+    outname = [i.name for i in detector.get_outputs()]
+    inname = [i.name for i in detector.get_inputs()]
 
     # SAM
-    sam = sam_model_registry["vit_h"](checkpoint="data/pretrain/sam_vit_h_4b8939.pth")
-    _ = sam.to(device)
-    predictor = SamPredictor(sam)
+    checkpoint = "./sam_functions/sam2/checkpoints/sam2.1_hiera_large.pt"
+    model_cfg = "configs/sam2.1/sam2.1_hiera_l"
+    predictor = SAM2ImagePredictor(build_sam2(model_cfg, checkpoint))
 
     # DEVA
     vid_length = len(imgfiles)
@@ -61,33 +140,35 @@ def detect_segment_track(
         ### --- Detection ---
         with torch.no_grad():
             with torch.amp.autocast("cuda"):
-                det_out = detector(img_cv2)
-                det_instances = det_out["instances"]
-                valid_idx = (det_instances.pred_classes == 0) & (
-                    det_instances.scores > thresh
+                image_information = {"preprocessing": True}
+                image, image_information = preprocessing(
+                    img_cv2, [640, 640], image_information
                 )
-                boxes = det_instances.pred_boxes.tensor[valid_idx].cpu().numpy()
-                confs = det_instances.scores[valid_idx].cpu().numpy()
-
+                inp = {inname[0]: image}
+                detections = detector.run(outname, inp)[0]
+                outputs = postprocessing(detections, image_information)
+                boxes = np.array([output["bbox"] for output in outputs])
+                confs = np.array([output["score"] for output in outputs])
                 boxes = np.hstack([boxes, confs[:, None]])
                 boxes = arrange_boxes(boxes, mode="size", min_size=min_size)
 
         ### --- SAM ---
         if len(boxes) > 0:
             with torch.amp.autocast("cuda"):
-                predictor.set_image(img_cv2, image_format="BGR")
+                predictor.set_image(img_cv2)
 
                 # multiple boxes
                 bb = torch.tensor(boxes[:, :4]).cuda()
-                bb = predictor.transform.apply_boxes_torch(bb, img_cv2.shape[:2])
-                masks, scores, _ = predictor.predict_torch(
+                # bb = predictor.transform.apply_boxes_torch(bb, img_cv2.shape[:2])
+
+                masks, scores, _ = predictor.predict(
                     point_coords=None,
                     point_labels=None,
-                    boxes=bb,
+                    box=bb,
                     multimask_output=False,
                 )
-                scores = scores.cpu()
-                masks = masks.cpu().squeeze(1)
+                scores = torch.from_numpy(scores)
+                masks = torch.from_numpy(masks).squeeze(1)
                 mask = masks.sum(dim=0)
         else:
             mask = np.zeros(img_cv2.shape[:2][::-1])
