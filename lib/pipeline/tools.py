@@ -87,9 +87,8 @@ def postprocessing(outputs, image_information):
         box = np.array([x0, y0, x1, y1])
         box -= np.array(dwdh * 2)
         box /= ratio
-        box = box.round().astype(np.int32)
         cls_id = int(cls_id)
-        score = round(float(score), 3)
+        score = float(score)
         scaled_output.append(
             {
                 "bbox": box,
@@ -148,6 +147,8 @@ def detect_segment_track(
                 detections = detector.run(outname, inp)[0]
                 outputs = postprocessing(detections, image_information)
                 boxes = np.array([output["bbox"] for output in outputs])
+                if not len(boxes):
+                    boxes = boxes.reshape(-1, 4)
                 confs = np.array([output["score"] for output in outputs])
                 boxes = np.hstack([boxes, confs[:, None]])
                 boxes = arrange_boxes(boxes, mode="size", min_size=min_size)
@@ -168,14 +169,15 @@ def detect_segment_track(
                     multimask_output=False,
                 )
                 scores = torch.from_numpy(scores)
-                masks = torch.from_numpy(masks).squeeze(1)
+                masks = torch.from_numpy(masks == 1.0)
                 mask = masks.sum(dim=0)
         else:
-            mask = np.zeros(img_cv2.shape[:2][::-1])
+            mask = np.zeros(img_cv2.shape[:2])
 
         ### --- DEVA ---
-        if len(boxes) > 0 and (boxes[:, -1] > 0.80).sum() > 0:
-            track_valid = boxes[:, -1] > 0.80  # only use high-confident
+        track_threshold = 0.001
+        if len(boxes) > 0 and (boxes[:, -1] > track_threshold).sum() > 0:
+            track_valid = boxes[:, -1] > track_threshold  # only use high-confident
             masks_track = masks[track_valid]
             scores_track = scores[track_valid]
         else:
