@@ -169,7 +169,7 @@ def detect_segment_track(
                     multimask_output=False,
                 )
                 scores = torch.from_numpy(scores)
-                masks = torch.from_numpy(masks == 1.0)
+                masks = torch.from_numpy(masks == 1.0).squeeze(1)
                 mask = masks.sum(dim=0)
         else:
             mask = np.zeros(img_cv2.shape[:2])
