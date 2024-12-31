@@ -355,8 +355,7 @@ class Renderer:
         )
         image = (results[0, ..., :3].cpu().numpy() * 255).astype(np.uint8)
         if len(verts_list):
-            print(verts_list.size())
-            points = torch.tensor(verts_list[[2500, 5500]])  # Example points
+            points = verts_list[0, 0, [2500, 5500]].to("cuda")
 
             # Project points to the screen space
             screen_points = self.cameras.transform_points_screen(
