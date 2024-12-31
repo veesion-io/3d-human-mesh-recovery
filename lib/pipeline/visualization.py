@@ -163,10 +163,11 @@ def visualize_tram(
         thickness = 3  # Thickness of the rectangle border
 
         # Draw a rectangle around each point
-        for x, y in hands:
-            top_left = (x - rect_half_size, y - rect_half_size)
-            bottom_right = (x + rect_half_size, y + rect_half_size)
-            cv2.rectangle(img, top_left, bottom_right, color, thickness)
+        for person_hands in hands:
+            for x, y in person_hands:
+                top_left = (x - rect_half_size, y - rect_half_size)
+                bottom_right = (x + rect_half_size, y + rect_half_size)
+                cv2.rectangle(img, top_left, bottom_right, color, thickness)
 
         out = np.concatenate([img, rend], axis=1)
         writer.append_data(out)
