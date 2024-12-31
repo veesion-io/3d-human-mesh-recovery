@@ -12,7 +12,12 @@ from lib.vis.renderer import Renderer
 
 
 def visualize_tram(
-    seq_folder, contact_frames=None, floor_scale=2, bin_size=-1, max_faces_per_bin=30000
+    seq_folder,
+    contact_frames=None,
+    floor_scale=2,
+    bin_size=-1,
+    max_faces_per_bin=30000,
+    video_fps=30.0,
 ):
     img_folder = f"{seq_folder}/images"
     hps_folder = f"{seq_folder}/hps"
@@ -114,7 +119,7 @@ def visualize_tram(
     ##### Render video for visualization #####
     writer = imageio.get_writer(
         f"{seq_folder}/tram_output.mp4",
-        fps=30,
+        fps=video_fps,
         mode="I",
         format="FFMPEG",
         macro_block_size=1,
