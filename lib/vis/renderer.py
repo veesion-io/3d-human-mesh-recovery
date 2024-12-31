@@ -354,22 +354,23 @@ class Renderer:
             mesh, cameras=cameras, lights=lights, materials=materials
         )
         image = (results[0, ..., :3].cpu().numpy() * 255).astype(np.uint8)
+        if len(verts_list):
+            print(verts_list.size())
+            points = torch.tensor(verts_list[[2500, 5500]])  # Example points
 
-        points = torch.tensor(verts_list[[2500, 5500]])  # Example points
+            # Project points to the screen space
+            screen_points = self.cameras.transform_points_screen(
+                points, image_size=(image.shape[0], image.shape[1])
+            )
 
-        # Project points to the screen space
-        screen_points = self.cameras.transform_points_screen(
-            points, image_size=(image.shape[0], image.shape[1])
-        )
+            # Extract screen coordinates
+            x_coords = screen_points[..., 0]
+            y_coords = screen_points[..., 1]
 
-        # Extract screen coordinates
-        x_coords = screen_points[..., 0]
-        y_coords = screen_points[..., 1]
+            # Convert to image indices (integer pixel indices)
+            image_indices = torch.stack([y_coords, x_coords], dim=-1).long()
 
-        # Convert to image indices (integer pixel indices)
-        image_indices = torch.stack([y_coords, x_coords], dim=-1).long()
-
-        print(image_indices)
+            print(image_indices)
 
         return image
 
