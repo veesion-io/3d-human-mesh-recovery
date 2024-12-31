@@ -137,7 +137,7 @@ def visualize_tram(
     renderer.set_ground(scale, cx.item(), cz.item())
 
     for i in tqdm(range(len(imgfiles))):
-        img = cv2.imread(imgfiles[i])[:, :, ::-1]
+        img = np.ascontiguousarray(cv2.imread(imgfiles[i])[:, :, ::-1], dtype=np.uint8)
 
         verts_list = track_verts[i]
         verts_colors = []
