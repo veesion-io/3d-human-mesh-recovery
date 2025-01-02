@@ -369,7 +369,7 @@ class Renderer:
 
             # Convert to image indices (integer pixel indices)
             image_indices.append(
-                torch.stack([y_coords, x_coords], dim=-1).long().data.cpu().numpy()
+                torch.stack([x_coords, y_coords], dim=-1).long().data.cpu().numpy()
             )
 
         return image, np.array(image_indices)
