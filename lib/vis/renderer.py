@@ -355,12 +355,12 @@ class Renderer:
         )
         image = (results[0, ..., :3].cpu().numpy() * 255).astype(np.uint8)
         image_indices = []
-        for human in verts_:
+        for human in verts_list:
             points = human[0, [2500, 5500]].to("cuda")
 
             # Project points to the screen space
             screen_points = self.cameras.transform_points_screen(
-                points, image_size=(image.shape[0], image.shape[1])
+                points, image_size=(image.shape[1], image.shape[0])
             )
 
             # Extract screen coordinates
