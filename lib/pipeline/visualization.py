@@ -169,8 +169,8 @@ def visualize_tram(
                 bottom_right = (int(x + rect_half_size), int(y + rect_half_size))
                 cv2.rectangle(img, top_left, bottom_right, (255, 0, 0), thickness)
             for y, x in person_hands:
-                dx = int(0.1 * height)
-                dy = int(0.16 * height)
+                dx = int(0.15 * height)
+                dy = int(0.21 * height)
                 # y = img.shape[1] - y
                 top_left = (int(x - dx), int(y - 0.25 * dy))
                 bottom_right = (int(x + dx), int(y + 1.75 * dy))
