@@ -163,7 +163,7 @@ def visualize_tram(
         for person_hands, height in zip(hands, heights):
             for y, x in person_hands:
                 rect_half_size = int(
-                    0.1 * height
+                    0.05 * height
                 )  # Half the side length of the rectangle
                 # y = img.shape[1] - y
                 top_left = (int(x - rect_half_size), int(y - 0.25 * rect_half_size))
