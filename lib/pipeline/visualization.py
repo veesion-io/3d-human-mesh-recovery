@@ -161,12 +161,13 @@ def visualize_tram(
 
         # Draw a rectangle around each point
         for person_hands, (extremal_points, height) in zip(hands, heights):
-            rect_half_size = int(min(img.shape[:2]) * 0.05)
+            rect_half_size = int(min(img.shape[:2]) * 0.025)
             # y = img.shape[1] - y
-            y, x = extremal_points
-            top_left = (int(x - rect_half_size), int(y - rect_half_size))
-            bottom_right = (int(x + rect_half_size), int(y + rect_half_size))
-            cv2.rectangle(img, top_left, bottom_right, (255, 0, 0), thickness)
+            for y, x in extremal_points:
+                y, x = extremal_points
+                top_left = (int(x - rect_half_size), int(y - rect_half_size))
+                bottom_right = (int(x + rect_half_size), int(y + rect_half_size))
+                cv2.rectangle(img, top_left, bottom_right, (255, 0, 0), thickness)
             for y, x in person_hands:
                 rect_half_size = int(0.1 * height)
                 # y = img.shape[1] - y
