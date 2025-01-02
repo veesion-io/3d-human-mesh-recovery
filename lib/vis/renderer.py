@@ -360,12 +360,12 @@ class Renderer:
 
             # Project points to the screen space
             screen_points = self.cameras.transform_points_screen(
-                points, image_size=(image.shape[1], image.shape[0])
+                points, image_size=(image.shape[0], image.shape[1])
             )
 
             # Extract screen coordinates
             x_coords = screen_points[..., 0]
-            y_coords = screen_points[..., 1]
+            y_coords = image.shape[0] - screen_points[..., 1]  # Flip vertically
 
             # Convert to image indices (integer pixel indices)
             image_indices.append(

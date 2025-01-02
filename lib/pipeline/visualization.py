@@ -164,7 +164,7 @@ def visualize_tram(
 
         # Draw a rectangle around each point
         for person_hands in hands:
-            for y, x in person_hands:
+            for x, y in person_hands:
                 top_left = (int(x - rect_half_size), int(y - rect_half_size))
                 bottom_right = (int(x + rect_half_size), int(y + rect_half_size))
                 cv2.rectangle(img, top_left, bottom_right, color, thickness)
