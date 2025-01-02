@@ -164,7 +164,6 @@ def visualize_tram(
             rect_half_size = int(min(img.shape[:2]) * 0.025)
             # y = img.shape[1] - y
             for y, x in extremal_points:
-                y, x = extremal_points
                 top_left = (int(x - rect_half_size), int(y - rect_half_size))
                 bottom_right = (int(x + rect_half_size), int(y + rect_half_size))
                 cv2.rectangle(img, top_left, bottom_right, (255, 0, 0), thickness)
