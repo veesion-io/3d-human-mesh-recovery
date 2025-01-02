@@ -160,7 +160,7 @@ def visualize_tram(
             0.075 * min(img.shape[:2])
         )  # Half the side length of the rectangle
         color = (0, 0, 255)  # Red in BGR format
-        thickness = 3  # Thickness of the rectangle border
+        thickness = 2  # Thickness of the rectangle border
 
         # Draw a rectangle around each point
         for person_hands in hands:
