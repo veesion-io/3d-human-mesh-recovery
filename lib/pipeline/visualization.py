@@ -166,8 +166,8 @@ def visualize_tram(
         for person_hands in hands:
             for y, x in person_hands:
                 # y = img.shape[1] - y
-                top_left = (int(x - rect_half_size), int(y - 0.1 * rect_half_size))
-                bottom_right = (int(x + rect_half_size), int(y + 1.9 * rect_half_size))
+                top_left = (int(x - rect_half_size), int(y - 0.25 * rect_half_size))
+                bottom_right = (int(x + rect_half_size), int(y + 1.75 * rect_half_size))
                 cv2.rectangle(img, top_left, bottom_right, color, thickness)
         if len(hands) and i > 100 and i < 110:
             cv2.imwrite("hey.png", img)
