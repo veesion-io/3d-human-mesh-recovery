@@ -157,7 +157,7 @@ def visualize_tram(
         )
         # Rectangle size
         rect_half_size = int(
-            0.025 * min(img.shape[:2])
+            0.075 * min(img.shape[:2])
         )  # Half the side length of the rectangle
         color = (0, 0, 255)  # Red in BGR format
         thickness = 3  # Thickness of the rectangle border
@@ -166,8 +166,8 @@ def visualize_tram(
         for person_hands in hands:
             for y, x in person_hands:
                 # y = img.shape[1] - y
-                top_left = (int(x - rect_half_size), int(y - rect_half_size))
-                bottom_right = (int(x + rect_half_size), int(y + rect_half_size))
+                top_left = (int(x - 0.25 * rect_half_size), int(y - rect_half_size))
+                bottom_right = (int(x + 1.75 * rect_half_size), int(y + rect_half_size))
                 cv2.rectangle(img, top_left, bottom_right, color, thickness)
         if len(hands) and i > 100 and i < 110:
             cv2.imwrite("hey.png", img)
