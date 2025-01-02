@@ -354,13 +354,13 @@ class Renderer:
             mesh, cameras=cameras, lights=lights, materials=materials
         )
         image = (results[0, ..., :3].cpu().numpy() * 255).astype(np.uint8)
-        image_indices = []
+        image_indices, heights = [], []
         for human in verts_list:
-            points = human[0, [2500, 5500]].to("cuda")
+            hands_points = human[0, [2500, 5500]].to("cuda")
 
             # Project points to the screen space
             screen_points = cameras.transform_points_screen(
-                points, image_size=self.image_sizes[0]
+                hands_points, image_size=self.image_sizes[0]
             )
 
             # Extract screen coordinates
@@ -371,8 +371,21 @@ class Renderer:
             image_indices.append(
                 torch.stack([y_coords, x_coords], dim=-1).long().data.cpu().numpy()
             )
+            extremal_points = human[0, [0, 5000]].to("cuda")
+            # Project points to the screen space
+            screen_points = cameras.transform_points_screen(
+                extremal_points, image_size=self.image_sizes[0]
+            )
 
-        return image, np.array(image_indices)
+            # Extract screen coordinates
+            x_coords = screen_points[..., 0]
+            y_coords = screen_points[..., 1]
+
+            # Convert to image indices (integer pixel indices)
+            height = torch.sum((y_coords - x_coords) ** 2) ** 0.5
+            heights.append(height)
+
+        return image, np.array(image_indices), np.array(heights)
 
 
 def prep_shared_geometry(verts, faces, colors):

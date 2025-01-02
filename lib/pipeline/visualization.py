@@ -152,19 +152,19 @@ def visualize_tram(
 
         faces = renderer.faces.clone().squeeze(0)
         cameras, lights = renderer.create_camera_from_cv(cam_R[[i]], cam_T[[i]])
-        rend, hands = renderer.render_with_ground_multiple(
+        rend, hands, heights = renderer.render_with_ground_multiple(
             verts_list, faces, verts_colors, cameras, lights
         )
         # Rectangle size
-        rect_half_size = int(
-            0.1 * min(img.shape[:2])
-        )  # Half the side length of the rectangle
         color = (0, 0, 255)  # Red in BGR format
         thickness = 2  # Thickness of the rectangle border
 
         # Draw a rectangle around each point
-        for person_hands in hands:
+        for person_hands, height in zip(hands, heights):
             for y, x in person_hands:
+                rect_half_size = int(
+                    0.1 * height
+                )  # Half the side length of the rectangle
                 # y = img.shape[1] - y
                 top_left = (int(x - rect_half_size), int(y - 0.25 * rect_half_size))
                 bottom_right = (int(x + rect_half_size), int(y + 1.75 * rect_half_size))
