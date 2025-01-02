@@ -360,7 +360,7 @@ class Renderer:
 
             # Project points to the screen space
             screen_points = self.cameras.transform_points_screen(
-                points, image_size=(image.shape[0], image.shape[1])
+                points, image_size=(image.shape[1], image.shape[0])
             )
 
             # Extract screen coordinates
