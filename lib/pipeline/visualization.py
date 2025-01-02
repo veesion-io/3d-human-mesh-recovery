@@ -162,17 +162,18 @@ def visualize_tram(
 
         # Draw a rectangle around each point
         for person_hands, (extremal_points, height) in zip(hands, heights):
-            rect_half_size = int(min(img.shape[:2]) * 0.025)
+            rect_half_size = int(min(img.shape[:2]) * 0.01)
             # y = img.shape[1] - y
             for y, x in extremal_points:
                 top_left = (int(x - rect_half_size), int(y - rect_half_size))
                 bottom_right = (int(x + rect_half_size), int(y + rect_half_size))
                 cv2.rectangle(img, top_left, bottom_right, (255, 0, 0), thickness)
             for y, x in person_hands:
-                rect_half_size = int(0.05 * height)
+                dx = int(0.05 * height)
+                dy = int(0.1 * height)
                 # y = img.shape[1] - y
-                top_left = (int(x - rect_half_size), int(y - 0.25 * rect_half_size))
-                bottom_right = (int(x + rect_half_size), int(y + 1.75 * rect_half_size))
+                top_left = (int(x - dx), int(y - 0.25 * dy))
+                bottom_right = (int(x + dx), int(y + 1.75 * dy))
                 cv2.rectangle(img, top_left, bottom_right, color, thickness)
         if len(hands) and i > 100 and i < 110:
             cv2.imwrite("hey.png", img)
