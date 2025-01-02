@@ -169,9 +169,9 @@ def visualize_tram(
                 top_left = (int(x - rect_half_size), int(y - rect_half_size))
                 bottom_right = (int(x + rect_half_size), int(y + rect_half_size))
                 cv2.rectangle(img, top_left, bottom_right, color, thickness)
-        if len(hands) and i > 100:
+        if len(hands) and i > 100 and i < 110:
             cv2.imwrite("hey.png", img)
-            sqcqcqs
+            # sqcqcqs
         out = np.concatenate([img, rend], axis=1)
         writer.append_data(out)
 
