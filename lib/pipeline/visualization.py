@@ -128,7 +128,8 @@ def visualize_tram(
     renderer = Renderer(
         img.shape[1],
         img.shape[0],
-        img_focal - 100,
+        # img_focal - 100,
+        img_focal,
         "cuda",
         smpl.faces,
         bin_size=bin_size,

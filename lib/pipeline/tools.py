@@ -210,7 +210,7 @@ def detect_segment_track(
     vjson = result_saver.video_json
     ann = vjson["annotations"]
     iou_thresh = 0.5
-    conf_thresh = 0.5
+    conf_thresh = 0.15
 
     tracks = {}
     for frame in ann:
