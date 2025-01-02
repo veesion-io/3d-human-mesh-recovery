@@ -380,13 +380,13 @@ class Renderer:
             # Extract screen coordinates
             x_coords = screen_points[..., 0]
             y_coords = screen_points[..., 1]
-
+            points = torch.stack([y_coords, x_coords], dim=-1).long().data.cpu().numpy()
             # Convert to image indices (integer pixel indices)
-            height = torch.sum((y_coords - x_coords) ** 2) ** 0.5
+            height = np.sum((points[0, :] - points[1, :]) ** 2) ** 0.5
             heights.append(
                 (
-                    torch.stack([y_coords, x_coords], dim=-1).long().data.cpu().numpy(),
-                    height.item(),
+                    points,
+                    height,
                 )
             )
 
