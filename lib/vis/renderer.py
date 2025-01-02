@@ -359,7 +359,7 @@ class Renderer:
             points = human[0, [2500, 5500]].to("cuda")
 
             # Project points to the screen space
-            screen_points = self.cameras.transform_points_screen(
+            screen_points = cameras.transform_points_screen(
                 points, image_size=(self.image_sizes[0], self.image_sizes[0])
             )
 
