@@ -365,7 +365,7 @@ class Renderer:
 
             # Extract screen coordinates
             x_coords = screen_points[..., 0]
-            y_coords = image.shape[0] - screen_points[..., 1]  # Flip vertically
+            y_coords = screen_points[..., 1]
 
             # Convert to image indices (integer pixel indices)
             image_indices.append(
