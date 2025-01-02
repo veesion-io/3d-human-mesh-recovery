@@ -383,7 +383,7 @@ class Renderer:
 
             # Convert to image indices (integer pixel indices)
             height = torch.sum((y_coords - x_coords) ** 2) ** 0.5
-            heights.append(height)
+            heights.append(height.item())
 
         return image, np.array(image_indices), np.array(heights)
 
