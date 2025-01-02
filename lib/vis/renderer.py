@@ -364,12 +364,12 @@ class Renderer:
             )
 
             # Extract screen coordinates
-            x_coords = image.shape[0] - screen_points[..., 0]
+            x_coords = screen_points[..., 0]
             y_coords = screen_points[..., 1]
 
             # Convert to image indices (integer pixel indices)
             image_indices.append(
-                torch.stack([x_coords, y_coords], dim=-1).long().data.cpu().numpy()
+                torch.stack([y_coords, x_coords], dim=-1).long().data.cpu().numpy()
             )
 
         return image, np.array(image_indices)
