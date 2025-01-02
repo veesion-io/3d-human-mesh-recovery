@@ -383,9 +383,14 @@ class Renderer:
 
             # Convert to image indices (integer pixel indices)
             height = torch.sum((y_coords - x_coords) ** 2) ** 0.5
-            heights.append(height.item())
+            heights.append(
+                (
+                    torch.stack([y_coords, x_coords], dim=-1).long().data.cpu().numpy(),
+                    height.item(),
+                )
+            )
 
-        return image, np.array(image_indices), np.array(heights)
+        return image, np.array(image_indices), heights
 
 
 def prep_shared_geometry(verts, faces, colors):
