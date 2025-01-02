@@ -157,7 +157,7 @@ def visualize_tram(
         )
         # Rectangle size
         rect_half_size = int(
-            0.075 * min(img.shape[:2])
+            0.1 * min(img.shape[:2])
         )  # Half the side length of the rectangle
         color = (0, 0, 255)  # Red in BGR format
         thickness = 2  # Thickness of the rectangle border
