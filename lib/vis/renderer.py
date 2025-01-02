@@ -355,7 +355,7 @@ class Renderer:
         )
         image = (results[0, ..., :3].cpu().numpy() * 255).astype(np.uint8)
         image_indices = []
-        for human in verts_list:
+        for human in verts_:
             points = human[0, [2500, 5500]].to("cuda")
 
             # Project points to the screen space
