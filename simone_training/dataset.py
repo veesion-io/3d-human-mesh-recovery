@@ -2,6 +2,7 @@ import torch
 from torch.utils.data import Dataset
 import numpy as np
 import json
+from glob import glob
 
 
 def compute_timestamp_intersection(window, timespan):
@@ -50,7 +51,6 @@ def find_closest(sorted_list1, sorted_list2):
     return sorted_list2[indices]
 
 
-import glob
 import cv2
 
 
