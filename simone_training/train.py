@@ -6,8 +6,8 @@ import sys
 
 sys.path.insert(0, os.path.dirname(__file__) + "/..")
 
-from .dataset import TrackDataset
-from .model import VideoClassifier
+from simone_training.dataset import TrackDataset
+from simone_training.model import VideoClassifier
 from torch import nn
 
 # Hyperparameters
