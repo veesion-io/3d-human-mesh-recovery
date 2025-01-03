@@ -75,9 +75,7 @@ class TrackDataset(Dataset):
             self.videos_names = self.videos_names[: int(0.9 * len(self.videos_names))]
         else:
             self.videos_names = self.videos_names[int(0.9 * len(self.videos_names)) :]
-        self.videos_meta_data = {
-            k: self.videos_meta_data[k] for k in self.videos_meta_data
-        }
+        self.videos_meta_data = {k: self.videos_meta_data[k] for k in self.videos_names}
         self.window_duration = window_duration
         self.tracks_path = tracks_path
         self.target_fps = target_fps
