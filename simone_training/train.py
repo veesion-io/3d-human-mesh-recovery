@@ -42,7 +42,6 @@ val_dataset = TrackDataset(
     mode="val",
 )
 
-val_dataset = TrackDataset(split="val")
 val_loader = DataLoader(
     val_dataset, batch_size=batch_size, shuffle=False, collate_fn=lambda x: x
 )
