@@ -272,7 +272,9 @@ class TrackDataset(Dataset):
             0, max(0, video_meta_data["duration"] - self.window_duration)
         )
         end_time = min(video_meta_data["duration"], start_time + self.window_duration)
-        video_camera, video_tracks = self.load_video_tracks(video_name)
+        video_camera, video_tracks = self.load_video_tracks(
+            video_name, video_meta_data["height"], video_meta_data["width"]
+        )
         tracks_data = []
 
         for track_id, track_info in video_tracks.items():
