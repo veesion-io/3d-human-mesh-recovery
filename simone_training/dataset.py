@@ -279,9 +279,7 @@ class TrackDataset(Dataset):
                 video_name, video_info["height"], video_info["width"]
             )
         except:
-            raise FileNotFoundError(
-                f"Metadata for video {video_name} is missing or invalid."
-            )
+            return None
         tracks_data = []
         for track_id, track_info in video_tracks.items():
             if not self.track_in_window(
