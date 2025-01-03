@@ -91,6 +91,6 @@ for epoch in range(num_epochs):
 
         train_loss += loss.item()
 
-    print(
-        f"Epoch {epoch+1}/{num_epochs}, Train Loss: {train_loss / len(train_loader):.4f}"
-    )
+        print(
+            f"Epoch {epoch+1}/{num_epochs}, Train Loss: {train_loss / len(train_loader):.4f}"
+        )
