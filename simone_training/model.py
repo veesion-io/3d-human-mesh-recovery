@@ -46,7 +46,7 @@ class HandImageEncoder(nn.Module):
         )  # Combine batch, time, and hand dimensions
         features = self.feature_extractor(hand_images)
         features = self.fc(features)
-        features = features.view(B, T, 2, -1).mean(dim=2)  # Average over two hands
+        features = features.view(B, T, 2, -1).max(dim=2)  # Average over two hands
         return features  # (B, T, output_dim)
 
 
@@ -67,7 +67,7 @@ class VideoClassifier(nn.Module):
 
         for keypoints, hands in video_tracks:
             keypoint_feat = self.keypoint_encoder(keypoints)
-            hand_feat = self.hand_encoder(hands).mean(dim=1)  # Temporal pooling
+            hand_feat = self.hand_encoder(hands).max(dim=1)  # Temporal pooling
 
             combined_features = torch.cat([keypoint_feat, hand_feat], dim=-1)
             track_pred = self.track_fc(combined_features)
