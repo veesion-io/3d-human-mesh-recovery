@@ -12,7 +12,12 @@ from lib.vis.renderer import Renderer
 
 
 def visualize_tram(
-    seq_folder, contact_frames=None, floor_scale=2, bin_size=-1, max_faces_per_bin=30000
+    seq_folder,
+    contact_frames=None,
+    floor_scale=2,
+    bin_size=-1,
+    max_faces_per_bin=30000,
+    video_fps=30.0,
 ):
     img_folder = f"{seq_folder}/images"
     hps_folder = f"{seq_folder}/hps"
@@ -114,7 +119,7 @@ def visualize_tram(
     ##### Render video for visualization #####
     writer = imageio.get_writer(
         f"{seq_folder}/tram_output.mp4",
-        fps=30,
+        fps=video_fps,
         mode="I",
         format="FFMPEG",
         macro_block_size=1,
@@ -123,7 +128,8 @@ def visualize_tram(
     renderer = Renderer(
         img.shape[1],
         img.shape[0],
-        img_focal - 100,
+        # img_focal - 100,
+        img_focal,
         "cuda",
         smpl.faces,
         bin_size=bin_size,
@@ -132,7 +138,7 @@ def visualize_tram(
     renderer.set_ground(scale, cx.item(), cz.item())
 
     for i in tqdm(range(len(imgfiles))):
-        img = cv2.imread(imgfiles[i])[:, :, ::-1]
+        img = np.ascontiguousarray(cv2.imread(imgfiles[i])[:, :, ::-1], dtype=np.uint8)
 
         verts_list = track_verts[i]
         verts_colors = []
@@ -147,10 +153,28 @@ def visualize_tram(
 
         faces = renderer.faces.clone().squeeze(0)
         cameras, lights = renderer.create_camera_from_cv(cam_R[[i]], cam_T[[i]])
-        rend = renderer.render_with_ground_multiple(
+        rend, hands, heights = renderer.render_with_ground_multiple(
             verts_list, faces, verts_colors, cameras, lights
         )
+        # Rectangle size
+        color = (0, 0, 255)  # Red in BGR format
+        thickness = 2  # Thickness of the rectangle border
 
+        # Draw a rectangle around each point
+        for person_hands, (_, height) in zip(hands, heights):
+            # rect_half_size = int(min(img.shape[:2]) * 0.01)
+            # # y = img.shape[1] - y
+            # for y, x in extremal_points:
+            #     top_left = (int(x - rect_half_size), int(y - rect_half_size))
+            #     bottom_right = (int(x + rect_half_size), int(y + rect_half_size))
+            #     cv2.rectangle(img, top_left, bottom_right, (255, 0, 0), thickness)
+            for y, x in person_hands:
+                dx = int(0.15 * height)
+                dy = int(0.21 * height)
+                # y = img.shape[1] - y
+                top_left = (int(x - dx), int(y - 0.25 * dy))
+                bottom_right = (int(x + dx), int(y + 1.75 * dy))
+                cv2.rectangle(img, top_left, bottom_right, color, thickness)
         out = np.concatenate([img, rend], axis=1)
         writer.append_data(out)
 
