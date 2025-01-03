@@ -63,8 +63,10 @@ for epoch in range(num_epochs):
     for batch in train_loader:
         poses_list, hands_list, video_indices, labels = [], [], [], []
 
-        track_counter = 0
         for video_idx, data in enumerate(batch):
+            if data is None:  # Skip videos with invalid metadata
+                continue
+
             num_tracks = data["poses"].size(0)
             if num_tracks > 0:
                 poses_list.append(data["poses"].cuda())
@@ -72,17 +74,15 @@ for epoch in range(num_epochs):
                 video_indices.extend([video_idx] * num_tracks)
             labels.append(data["label"])
 
-        # Concatenate all tracks
-        if poses_list:
-            poses_list = torch.cat(poses_list, dim=0)
-            hands_list = torch.cat(hands_list, dim=0)
-            video_indices = torch.tensor(video_indices, dtype=torch.long).cuda()
-        else:
+        # If no valid videos in batch, skip the batch
+        if not poses_list:
             continue
 
+        poses_list = torch.cat(poses_list, dim=0)
+        hands_list = torch.cat(hands_list, dim=0)
+        video_indices = torch.tensor(video_indices, dtype=torch.long).cuda()
         labels = torch.tensor(labels, dtype=torch.float32).cuda()
 
-        # Forward pass
         optimizer.zero_grad()
         outputs = model(poses_list, hands_list, video_indices)
         loss = criterion(outputs, labels)
@@ -93,40 +93,4 @@ for epoch in range(num_epochs):
 
     print(
         f"Epoch {epoch+1}/{num_epochs}, Train Loss: {train_loss / len(train_loader):.4f}"
-    )
-
-    # Validation loop
-    model.eval()
-    val_loss, correct, total = 0, 0, 0
-    with torch.no_grad():
-        for batch in val_loader:
-            poses_list, hands_list, video_indices, labels = [], [], [], []
-
-            for video_idx, data in enumerate(batch):
-                num_tracks = data["poses"].size(0)
-                if num_tracks > 0:
-                    poses_list.append(data["poses"].cuda())
-                    hands_list.append(data["hands_regions"].cuda())
-                    video_indices.extend([video_idx] * num_tracks)
-                labels.append(data["label"])
-
-            if poses_list:
-                poses_list = torch.cat(poses_list, dim=0)
-                hands_list = torch.cat(hands_list, dim=0)
-                video_indices = torch.tensor(video_indices, dtype=torch.long).cuda()
-            else:
-                continue
-
-            labels = torch.tensor(labels, dtype=torch.float32).cuda()
-
-            outputs = model(poses_list, hands_list, video_indices)
-            loss = criterion(outputs, labels)
-            val_loss += loss.item()
-
-            predictions = (outputs > 0.5).float()
-            correct += (predictions == labels).sum().item()
-            total += labels.size(0)
-
-    print(
-        f"Validation Loss: {val_loss / len(val_loader):.4f}, Accuracy: {correct / total:.4f}"
     )
