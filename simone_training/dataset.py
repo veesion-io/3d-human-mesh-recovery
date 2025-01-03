@@ -287,7 +287,9 @@ class TrackDataset(Dataset):
         tracks_data = []
 
         for track_id, track_info in video_tracks.items():
-            if not self.track_in_window(track_info, [start_time, end_time]):
+            if not self.track_in_window(
+                video_meta_data["fps"], track_info, [start_time, end_time]
+            ):
                 continue
             cropped_track_info = self.crop_track(
                 track_info,
