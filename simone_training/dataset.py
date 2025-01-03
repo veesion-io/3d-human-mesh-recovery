@@ -272,25 +272,25 @@ class TrackDataset(Dataset):
             0, max(0, video_meta_data["duration"] - self.window_duration)
         )
         end_time = min(video_meta_data["duration"], start_time + self.window_duration)
+        video_info = read_video_info(os.path.join("simone_bag_subset", video_name))
         # Check if metadata is missing or invalid
         try:
             video_camera, video_tracks = self.load_video_tracks(
-                video_name, video_meta_data["height"], video_meta_data["width"]
+                video_name, video_info["height"], video_info["width"]
             )
         except:
             raise FileNotFoundError(
                 f"Metadata for video {video_name} is missing or invalid."
             )
-
         tracks_data = []
         for track_id, track_info in video_tracks.items():
             if not self.track_in_window(
-                video_meta_data["fps"], track_info, [start_time, end_time]
+                video_info["fps"], track_info, [start_time, end_time]
             ):
                 continue
             cropped_track_info = self.crop_track(
                 track_info,
-                video_meta_data["fps"],
+                video_info["fps"],
                 self.target_fps,
                 [start_time, end_time],
             )
@@ -314,3 +314,25 @@ class TrackDataset(Dataset):
             "label": label,
         }
         return formatted_data
+
+
+import av
+
+
+def read_video_info(video_path: str):
+    try:
+        with av.open(video_path) as video:
+            stream = video.streams.video[0]
+            fps = float(stream.average_rate)
+
+            if stream.duration is None:
+                duration = video.duration / av.time_base
+            else:
+                duration = float(stream.duration * stream.time_base)
+
+            width = stream.width
+            height = stream.height
+
+        return {"fps": fps, "duration": duration, "width": width, "height": height}
+    except av.error.InvalidDataError:
+        return {"fps": None, "duration": None, "width": None, "height": None}
