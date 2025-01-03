@@ -278,14 +278,11 @@ class TrackDataset(Dataset):
                 video_name, video_meta_data["height"], video_meta_data["width"]
             )
         except:
-            return {
-                "poses": torch.empty(0),
-                "hands_regions": torch.empty(0),
-                "label": -1,
-            }
+            raise FileNotFoundError(
+                f"Metadata for video {video_name} is missing or invalid."
+            )
 
         tracks_data = []
-
         for track_id, track_info in video_tracks.items():
             if not self.track_in_window(
                 video_meta_data["fps"], track_info, [start_time, end_time]
@@ -304,9 +301,16 @@ class TrackDataset(Dataset):
                     torch.from_numpy(hands_regions),
                 )
             )
+        label = find_window_label(video_meta_data, [start_time, end_time])
+        if len(tracks_data) == 0:
+            return {
+                "poses": torch.empty(0),
+                "hands_regions": torch.empty(0),
+                "label": label,
+            }
         formatted_data = {
             "poses": torch.stack([x[0] for x in tracks_data]),
             "hands_regions": torch.stack([x[1] for x in tracks_data]),
-            "label": find_window_label(video_meta_data, [start_time, end_time]),
+            "label": label,
         }
         return formatted_data

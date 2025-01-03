@@ -56,60 +56,70 @@ model = model.cuda()
 
 optimizer = Adam(model.parameters(), lr=learning_rate)
 criterion = nn.BCELoss()
-
-# Training loop with missing video info handling
+# Training loop
 for epoch in range(num_epochs):
     model.train()
     train_loss = 0
     for batch in train_loader:
-        video_tracks = []
-        labels = []
-        for data in batch:
-            # Skip if video info is incomplete
-            if not data["poses"].size(0) or not data["hands_regions"].size(0):
-                continue
-            video_tracks.append((data["poses"].cuda(), data["hands_regions"].cuda()))
+        poses_list, hands_list, video_indices, labels = [], [], [], []
+
+        track_counter = 0
+        for video_idx, data in enumerate(batch):
+            num_tracks = data["poses"].size(0)
+            if num_tracks > 0:
+                poses_list.append(data["poses"].cuda())
+                hands_list.append(data["hands_regions"].cuda())
+                video_indices.extend([video_idx] * num_tracks)
             labels.append(data["label"])
 
-        # Skip empty batches
-        if len(video_tracks) == 0:
+        # Concatenate all tracks
+        if poses_list:
+            poses_list = torch.cat(poses_list, dim=0)
+            hands_list = torch.cat(hands_list, dim=0)
+            video_indices = torch.tensor(video_indices, dtype=torch.long).cuda()
+        else:
             continue
 
         labels = torch.tensor(labels, dtype=torch.float32).cuda()
 
+        # Forward pass
         optimizer.zero_grad()
-        outputs = torch.stack([model(tracks) for tracks in video_tracks])
+        outputs = model(poses_list, hands_list, video_indices)
         loss = criterion(outputs, labels)
         loss.backward()
         optimizer.step()
 
         train_loss += loss.item()
 
+    print(
+        f"Epoch {epoch+1}/{num_epochs}, Train Loss: {train_loss / len(train_loader):.4f}"
+    )
+
     # Validation loop
     model.eval()
-    val_loss = 0
-    correct = 0
-    total = 0
+    val_loss, correct, total = 0, 0, 0
     with torch.no_grad():
         for batch in val_loader:
-            video_tracks = []
-            labels = []
-            for data in batch:
-                # Skip if video info is incomplete
-                if not data["poses"].size(0) or not data["hands_regions"].size(0):
-                    continue
-                video_tracks.append(
-                    (data["poses"].cuda(), data["hands_regions"].cuda())
-                )
+            poses_list, hands_list, video_indices, labels = [], [], [], []
+
+            for video_idx, data in enumerate(batch):
+                num_tracks = data["poses"].size(0)
+                if num_tracks > 0:
+                    poses_list.append(data["poses"].cuda())
+                    hands_list.append(data["hands_regions"].cuda())
+                    video_indices.extend([video_idx] * num_tracks)
                 labels.append(data["label"])
 
-            # Skip empty batches
-            if len(video_tracks) == 0:
+            if poses_list:
+                poses_list = torch.cat(poses_list, dim=0)
+                hands_list = torch.cat(hands_list, dim=0)
+                video_indices = torch.tensor(video_indices, dtype=torch.long).cuda()
+            else:
                 continue
 
             labels = torch.tensor(labels, dtype=torch.float32).cuda()
 
-            outputs = torch.stack([model(tracks) for tracks in video_tracks])
+            outputs = model(poses_list, hands_list, video_indices)
             loss = criterion(outputs, labels)
             val_loss += loss.item()
 
@@ -117,10 +127,6 @@ for epoch in range(num_epochs):
             correct += (predictions == labels).sum().item()
             total += labels.size(0)
 
-    train_loss /= len(train_loader)
-    val_loss /= len(val_loader)
-    accuracy = correct / total if total > 0 else 0
-
     print(
-        f"Epoch {epoch+1}/{num_epochs}, Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}, Accuracy: {accuracy:.4f}"
+        f"Validation Loss: {val_loss / len(val_loader):.4f}, Accuracy: {correct / total:.4f}"
     )

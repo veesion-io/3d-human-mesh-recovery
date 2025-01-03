@@ -59,22 +59,51 @@ class VideoClassifier(nn.Module):
             nn.Linear(keypoint_hidden_dim + hand_feature_dim, final_hidden_dim),
             nn.ReLU(),
             nn.Linear(final_hidden_dim, 1),
-            nn.Sigmoid(),
         )
+        self.no_track_score = nn.Parameter(
+            torch.tensor(0.5)
+        )  # Learnable score for no-track cases
+        self.video_fc = nn.Sigmoid()  # Final video-level classification
 
-    def forward(self, video_tracks):
-        track_predictions = []
+    def forward(self, poses_list, hands_list, video_indices):
+        """
+        Args:
+            poses_list: Tensor of shape (N, T, nk, 3), all tracks concatenated
+            hands_list: Tensor of shape (N, T, 2, h, w), all hand regions concatenated
+            video_indices: Tensor of shape (N,), mapping each track to its video
 
-        for keypoints, hands in video_tracks:
-            keypoint_feat = self.keypoint_encoder(keypoints)
-            hand_feat = self.hand_encoder(hands).max(dim=1)  # Temporal pooling
+        Returns:
+            video_predictions: Tensor of shape (B,), video-level predictions
+        """
+        # Encode all tracks together
+        keypoint_features = self.keypoint_encoder(
+            poses_list
+        )  # (N, keypoint_hidden_dim)
+        hand_features = self.hand_encoder(hands_list)  # (N, hand_feature_dim)
 
-            combined_features = torch.cat([keypoint_feat, hand_feat], dim=-1)
-            track_pred = self.track_fc(combined_features)
-            track_predictions.append(track_pred)
+        # Combine features and compute per-track logits
+        track_features = torch.cat([keypoint_features, hand_features], dim=-1)
+        track_logits = self.track_fc(track_features).squeeze(-1)  # (N,)
 
-        track_predictions = torch.stack(track_predictions)  # (num_tracks, 1)
-        return track_predictions
+        # Aggregate track predictions back to videos
+        num_videos = video_indices.max().item() + 1
+        video_logits = torch.full(
+            (num_videos,), -float("inf"), device=track_logits.device
+        )  # Max-pooling init
+        for i in range(len(track_logits)):
+            video_logits[video_indices[i]] = torch.max(
+                video_logits[video_indices[i]], track_logits[i]
+            )
+
+        # Replace -inf with learnable score for videos with no tracks
+        video_logits[video_logits == -float("inf")] = self.no_track_score
+
+        # Final video-level prediction
+        video_predictions = self.video_fc(video_logits.unsqueeze(-1)).squeeze(
+            -1
+        )  # (B,)
+
+        return video_predictions
 
 
 # Example usage
