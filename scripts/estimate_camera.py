@@ -45,7 +45,7 @@ nframes = video2frames(file, img_folder)
 print("Detect, Segment, and Track ...")
 imgfiles = sorted(glob(f"{img_folder}/*.jpg"))
 boxes_, masks_, tracks_ = detect_segment_track(
-    imgfiles, seq_folder, thresh=0.15, min_size=100, save_vos=args.visualize_mask
+    imgfiles, seq_folder, thresh=0.15, min_size=None, save_vos=args.visualize_mask
 )
 
 ##### Run Masked DROID-SLAM #####

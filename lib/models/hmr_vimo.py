@@ -21,7 +21,7 @@ class HMR_VIMO(nn.Module):
         self.device = device
         self.cfg = cfg
         self.crop_size = cfg.IMG_RES
-        self.seq_len = 16
+        self.min_seq_len = 16
 
         # SMPL
         self.smpl = SMPL()
@@ -147,7 +147,9 @@ class HMR_VIMO(nn.Module):
 
         frame = frame[valid]
         boxes = boxes[valid]
-        frame_chunks, boxes_chunks = parse_chunks(frame, boxes, min_len=16)
+        frame_chunks, boxes_chunks = parse_chunks(
+            frame, boxes, min_len=self.min_seq_len
+        )
 
         if len(frame_chunks) == 0:
             return
@@ -206,9 +208,9 @@ class HMR_VIMO(nn.Module):
             item = db[i]
             items.append(item)
 
-            if len(items) < 16:
+            if len(items) < self.min_seq_len:
                 continue
-            elif len(items) == 16:
+            elif len(items) == self.min_seq_len:
                 batch = default_collate(items)
             else:
                 items.pop(0)
