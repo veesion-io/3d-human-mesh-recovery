@@ -57,17 +57,25 @@ model = model.cuda()
 optimizer = Adam(model.parameters(), lr=learning_rate)
 criterion = nn.BCELoss()
 
-# Training loop
+# Training loop with missing video info handling
 for epoch in range(num_epochs):
     model.train()
     train_loss = 0
     for batch in train_loader:
-        video_tracks = [
-            (data["poses"].cuda(), data["hands_regions"].cuda()) for data in batch
-        ]
-        labels = torch.tensor(
-            [data["label"] for data in batch], dtype=torch.float32
-        ).cuda()
+        video_tracks = []
+        labels = []
+        for data in batch:
+            # Skip if video info is incomplete
+            if not data["poses"].size(0) or not data["hands_regions"].size(0):
+                continue
+            video_tracks.append((data["poses"].cuda(), data["hands_regions"].cuda()))
+            labels.append(data["label"])
+
+        # Skip empty batches
+        if len(video_tracks) == 0:
+            continue
+
+        labels = torch.tensor(labels, dtype=torch.float32).cuda()
 
         optimizer.zero_grad()
         outputs = torch.stack([model(tracks) for tracks in video_tracks])
@@ -84,12 +92,22 @@ for epoch in range(num_epochs):
     total = 0
     with torch.no_grad():
         for batch in val_loader:
-            video_tracks = [
-                (data["poses"].cuda(), data["hands_regions"].cuda()) for data in batch
-            ]
-            labels = torch.tensor(
-                [data["label"] for data in batch], dtype=torch.float32
-            ).cuda()
+            video_tracks = []
+            labels = []
+            for data in batch:
+                # Skip if video info is incomplete
+                if not data["poses"].size(0) or not data["hands_regions"].size(0):
+                    continue
+                video_tracks.append(
+                    (data["poses"].cuda(), data["hands_regions"].cuda())
+                )
+                labels.append(data["label"])
+
+            # Skip empty batches
+            if len(video_tracks) == 0:
+                continue
+
+            labels = torch.tensor(labels, dtype=torch.float32).cuda()
 
             outputs = torch.stack([model(tracks) for tracks in video_tracks])
             loss = criterion(outputs, labels)
@@ -101,7 +119,7 @@ for epoch in range(num_epochs):
 
     train_loss /= len(train_loader)
     val_loss /= len(val_loader)
-    accuracy = correct / total
+    accuracy = correct / total if total > 0 else 0
 
     print(
         f"Epoch {epoch+1}/{num_epochs}, Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}, Accuracy: {accuracy:.4f}"

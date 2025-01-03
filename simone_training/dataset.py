@@ -272,9 +272,18 @@ class TrackDataset(Dataset):
             0, max(0, video_meta_data["duration"] - self.window_duration)
         )
         end_time = min(video_meta_data["duration"], start_time + self.window_duration)
-        video_camera, video_tracks = self.load_video_tracks(
-            video_name, video_meta_data["height"], video_meta_data["width"]
-        )
+        # Check if metadata is missing or invalid
+        try:
+            video_camera, video_tracks = self.load_video_tracks(
+                video_name, video_meta_data["height"], video_meta_data["width"]
+            )
+        except:
+            return {
+                "poses": torch.empty(0),
+                "hands_regions": torch.empty(0),
+                "label": -1,
+            }
+
         tracks_data = []
 
         for track_id, track_info in video_tracks.items():
