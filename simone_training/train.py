@@ -1,8 +1,8 @@
 import torch
 from torch.utils.data import DataLoader
 from torch.optim import Adam
-from simone_training.dataset import TrackDataset
-from simone_training.model import VideoClassifier
+from .dataset import TrackDataset
+from .model import VideoClassifier
 from torch import nn
 
 # Hyperparameters
