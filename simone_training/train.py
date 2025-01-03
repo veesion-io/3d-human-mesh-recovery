@@ -1,6 +1,11 @@
 import torch
 from torch.utils.data import DataLoader
 from torch.optim import Adam
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(__file__) + "/..")
+
 from .dataset import TrackDataset
 from .model import VideoClassifier
 from torch import nn
