@@ -94,7 +94,7 @@ class TrackDataset(Dataset):
         floor_scale=2,
         max_faces_per_bin=30000,
     ):
-        video_barename = os.path.splitext(video_name)[0]
+        video_barename = os.path.splitext(video_name)[0].split(".")[0]
         img_folder = os.path.join(self.tracks_path, video_barename, "images")
         hps_folder = os.path.join(self.tracks_path, video_barename, "hps")
         imgfiles = sorted(glob(f"{img_folder}/*.jpg"))
