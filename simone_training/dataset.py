@@ -221,7 +221,7 @@ class TrackDataset(Dataset):
             track_info["frames_ids"], track_info["vertices"]
         ):
             img = cv2.imread(imgfiles[frame_id])
-            hands_points = frame_vertices[0, [2500, 5000]]
+            hands_points = frame_vertices[[2500, 5000]]
             screen_points = video_camera.transform_points_screen(
                 hands_points, image_size=img.shape[:2]
             )
