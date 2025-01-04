@@ -48,7 +48,7 @@ def find_closest(sorted_list1, sorted_list2):
     indices = np.abs(sorted_list1[:, None] - sorted_list2).argmin(axis=1)
 
     # Use the indices to get the closest values from sorted_list2
-    return sorted_list2[indices]
+    return sorted_list2[indices], indices
 
 
 import cv2
@@ -204,12 +204,12 @@ class TrackDataset(Dataset):
         step = 1 / target_fps
         timestamps_to_select = np.arange(timespan[0], timespan[1] + step / 2, step)
         frames_ids_to_select = timestamps_to_select * video_fps
-        adjusted_frames_ids = find_closest(
+        adjusted_frames_ids, indices = find_closest(
             frames_ids_to_select, track_info["frames_ids"]
         )
         return {
             "frames_ids": adjusted_frames_ids,
-            "vertices": track_info["vertices"][adjusted_frames_ids],
+            "vertices": track_info["vertices"][indices],
         }
 
     def load_hands_regions(self, video_name, video_camera, track_info):
