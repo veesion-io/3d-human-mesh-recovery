@@ -46,7 +46,7 @@ class HandImageEncoder(nn.Module):
         )  # Combine batch, time, and hand dimensions
         features = self.feature_extractor(hand_images)
         features = self.fc(features)
-        features = features.view(B, T, 2, -1).max(dim=2)  # Average over two hands
+        features = features.view(B, T, 2, -1).max(dim=2)  # Pooling over two hands
         return features  # (B, T, output_dim)
 
 
