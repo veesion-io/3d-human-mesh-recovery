@@ -198,7 +198,7 @@ class TrackDataset(Dataset):
         )
         renderer.set_ground(scale, cx.item(), cz.item())
         cameras, _ = renderer.create_camera_from_cv(cam_R[[0]], cam_T[[0]])
-        return cameras, tracks_info
+        return cameras, tracks_info, offset, R
 
     def crop_track(self, track_info, video_fps, target_fps, timespan):
         step = 1 / target_fps
@@ -212,7 +212,9 @@ class TrackDataset(Dataset):
             "vertices": track_info["vertices"][indices],
         }
 
-    def load_hands_regions(self, video_name, video_camera, track_info):
+    def load_hands_regions(
+        self, video_name, video_camera, track_info, camera_offset, camera_R
+    ):
         video_barename = os.path.splitext(video_name)[0].split(".")[0]
         img_folder = os.path.join(self.tracks_path, video_barename, "images")
         imgfiles = sorted(glob(f"{img_folder}/*.jpg"))
@@ -220,8 +222,17 @@ class TrackDataset(Dataset):
         for frame_id, frame_vertices in zip(
             track_info["frames_ids"], track_info["vertices"]
         ):
-            img = cv2.imread(imgfiles[frame_id])
-            hands_points = frame_vertices[[2500, 5000]].to("cuda")
+            img = np.ascontiguousarray(
+                cv2.imread(imgfiles[frame_id])[:, :, ::-1], dtype=np.uint8
+            )
+            reshapes_vertices = torch.stack(frame_vertices)  # [:,None]
+            reshapes_vertices = torch.einsum(
+                "ij,bnj->bni", camera_R, reshapes_vertices
+            )[:, None]
+            reshapes_vertices -= camera_offset
+            reshapes_vertices = reshapes_vertices.to("cuda")
+
+            hands_points = reshapes_vertices[0, [2500, 5000]]
             screen_points = video_camera.transform_points_screen(
                 hands_points, image_size=img.shape[:2]
             )
@@ -234,7 +245,7 @@ class TrackDataset(Dataset):
             person_hands = (
                 torch.stack([y_coords, x_coords], dim=-1).long().data.cpu().numpy()
             )
-            extremal_points = frame_vertices[[0, 5000]].to("cuda")
+            extremal_points = reshapes_vertices[0, [0, 5000]]
             # Project points to the screen space
             screen_points = video_camera.transform_points_screen(
                 extremal_points, image_size=img.shape[:2]
@@ -275,8 +286,10 @@ class TrackDataset(Dataset):
         video_info = read_video_info(os.path.join("simone_bag_subset", video_name))
         # Check if metadata is missing or invalid
         try:
-            video_camera, video_tracks = self.load_video_tracks(
-                video_name, video_info["height"], video_info["width"]
+            video_camera, video_tracks, camera_offset, camera_R = (
+                self.load_video_tracks(
+                    video_name, video_info["height"], video_info["width"]
+                )
             )
         except:
             return None
@@ -293,7 +306,7 @@ class TrackDataset(Dataset):
                 [start_time, end_time],
             )
             hands_regions = self.load_hands_regions(
-                video_name, video_camera, cropped_track_info
+                video_name, video_camera, cropped_track_info, camera_offset, camera_R
             )
             tracks_data.append(
                 (
