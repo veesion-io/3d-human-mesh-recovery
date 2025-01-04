@@ -292,7 +292,9 @@ class TrackDataset(Dataset):
                 self.target_fps,
                 [start_time, end_time],
             )
-            hands_regions = self.load_hands_regions(video_camera, cropped_track_info)
+            hands_regions = self.load_hands_regions(
+                video_name, video_camera, cropped_track_info
+            )
             tracks_data.append(
                 (
                     torch.from_numpy(cropped_track_info["vertices"][:, ::120]),
