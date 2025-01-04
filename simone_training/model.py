@@ -47,7 +47,7 @@ class HandImageEncoder(nn.Module):
         hand_images = hand_images.permute(0, 3, 1, 2)
         features = self.feature_extractor(hand_images.float())
         features = self.fc(features)
-        features = features.view(B, T, 2, -1).max(dim=2)  # Pooling over two hands
+        features, _ = features.view(B, T, 2, -1).max(dim=2)  # Pooling over two hands
         return features  # (B, T, output_dim)
 
 
