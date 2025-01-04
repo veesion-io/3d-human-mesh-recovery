@@ -225,14 +225,14 @@ class TrackDataset(Dataset):
             img = np.ascontiguousarray(
                 cv2.imread(imgfiles[frame_id])[:, :, ::-1], dtype=np.uint8
             )
-            reshapes_vertices = frame_vertices.unsqueeze(0)  # [:,None]
-            reshapes_vertices = torch.einsum(
-                "ij,bnj->bni", camera_R, reshapes_vertices
+            reshaped_vertices = frame_vertices.unsqueeze(0)  # [:,None]
+            reshaped_vertices = torch.einsum(
+                "ij,bnj->bni", camera_R, reshaped_vertices
             )[:, None]
-            reshapes_vertices -= camera_offset
-            reshapes_vertices = reshapes_vertices.to("cuda")
+            reshaped_vertices -= camera_offset
+            reshaped_vertices = reshaped_vertices.to("cuda")
 
-            hands_points = reshapes_vertices[0, [2500, 5000]]
+            hands_points = reshaped_vertices[0, 0, [2500, 5000]]
             screen_points = video_camera.transform_points_screen(
                 hands_points, image_size=img.shape[:2]
             )
@@ -245,7 +245,7 @@ class TrackDataset(Dataset):
             person_hands = (
                 torch.stack([y_coords, x_coords], dim=-1).long().data.cpu().numpy()
             )
-            extremal_points = reshapes_vertices[0, [0, 5000]]
+            extremal_points = reshaped_vertices[0, 0, [0, 5000]]
             # Project points to the screen space
             screen_points = video_camera.transform_points_screen(
                 extremal_points, image_size=img.shape[:2]
