@@ -213,7 +213,7 @@ class TrackDataset(Dataset):
         }
 
     def load_hands_regions(self, video_name, video_camera, track_info):
-        video_barename = os.path.splitext(video_name)[0]
+        video_barename = os.path.splitext(video_name)[0].split(".")[0]
         img_folder = os.path.join(self.tracks_path, video_barename, "images")
         imgfiles = sorted(glob(f"{img_folder}/*.jpg"))
         track_hands = []
