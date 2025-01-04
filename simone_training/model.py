@@ -40,10 +40,11 @@ class HandImageEncoder(nn.Module):
         )  # Adjust input size based on the pretrained model
 
     def forward(self, hand_images):
-        B, T, _, H, W = hand_images.shape
+        B, T, _, H, W, C = hand_images.shape
         hand_images = hand_images.view(
-            B * T * 2, H, W
+            B * T * 2, H, W, C
         )  # Combine batch, time, and hand dimensions
+        hand_images = hand_images.permute(0, 3, 1, 1)
         features = self.feature_extractor(hand_images)
         features = self.fc(features)
         features = features.view(B, T, 2, -1).max(dim=2)  # Pooling over two hands
