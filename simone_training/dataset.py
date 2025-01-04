@@ -225,9 +225,10 @@ class TrackDataset(Dataset):
             img = np.ascontiguousarray(
                 cv2.imread(imgfiles[frame_id])[:, :, ::-1], dtype=np.uint8
             )
-            reshapes_vertices = torch.einsum("ij,bnj->bni", camera_R, frame_vertices)[
-                :, None
-            ]
+            reshapes_vertices = frame_vertices.unsqueeze(0)  # [:,None]
+            reshapes_vertices = torch.einsum(
+                "ij,bnj->bni", camera_R, reshapes_vertices
+            )[:, None]
             reshapes_vertices -= camera_offset
             reshapes_vertices = reshapes_vertices.to("cuda")
 
