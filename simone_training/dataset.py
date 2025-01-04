@@ -311,7 +311,7 @@ class TrackDataset(Dataset):
             tracks_data.append(
                 (
                     cropped_track_info["vertices"][:, ::120],
-                    torch.from_numpy(hands_regions),
+                    torch.from_numpy(np.array(hands_regions)),
                 )
             )
         label = find_window_label(video_meta_data, [start_time, end_time])
