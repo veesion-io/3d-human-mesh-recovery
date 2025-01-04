@@ -264,7 +264,7 @@ class TrackDataset(Dataset):
                 x1, y1 = (int(x - dx), int(y - 0.25 * dy))
                 x2, y2 = (int(x + dx), int(y + 1.75 * dy))
                 frame_hands_regions.append(
-                    cv2.resize(img[y1:y2, x1:x2], (self.hands_width, self.hands_height))
+                    cv2.resize(img[x1:x2, y1:y2], (self.hands_width, self.hands_height))
                 )
             track_hands.append(frame_hands_regions)
         return track_hands
