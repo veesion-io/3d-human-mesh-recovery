@@ -48,7 +48,8 @@ class HandImageEncoder(nn.Module):
         features = self.feature_extractor(hand_images.float())
         features = self.fc(features)
         features, _ = features.view(B, T, 2, -1).max(dim=2)  # Pooling over two hands
-        return features  # (B, T, output_dim)
+        features, _ = features.max(dim=1)  # Pooling over all frames hands
+        return features  # (B, output_dim)
 
 
 class VideoClassifier(nn.Module):
@@ -70,7 +71,7 @@ class VideoClassifier(nn.Module):
         """
         Args:
             poses_list: Tensor of shape (N, T, nk, 3), all tracks concatenated
-            hands_list: Tensor of shape (N, T, 2, h, w), all hand regions concatenated
+            hands_list: Tensor of shape (N, T, 2, h, w, c), all hand regions concatenated
             video_indices: Tensor of shape (N,), mapping each track to its video
 
         Returns:
