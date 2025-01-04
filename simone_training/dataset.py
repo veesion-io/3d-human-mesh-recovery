@@ -261,7 +261,7 @@ class TrackDataset(Dataset):
     def track_in_window(self, video_fps, track_info, window):
         track_timespan = [
             track_info["frames_ids"][0] / video_fps,
-            track_info["frames_ids"][1] / video_fps,
+            track_info["frames_ids"][-1] / video_fps,
         ]
         return compute_timestamp_intersection(window, track_timespan) > 0.5
 
