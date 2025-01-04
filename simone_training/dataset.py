@@ -234,7 +234,7 @@ class TrackDataset(Dataset):
             person_hands = (
                 torch.stack([y_coords, x_coords], dim=-1).long().data.cpu().numpy()
             )
-            extremal_points = frame_vertices[0, [0, 5000]].to("cuda")
+            extremal_points = frame_vertices[[0, 5000]].to("cuda")
             # Project points to the screen space
             screen_points = video_camera.transform_points_screen(
                 extremal_points, image_size=img.shape[:2]
