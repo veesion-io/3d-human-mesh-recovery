@@ -5,7 +5,7 @@ import json
 from glob import glob
 
 
-def compute_timestamp_intersection(window, timespan):
+def compute_timestamp_intersection(window, timespan, normalize=True):
     """
     minimal intersection
     input :
@@ -282,7 +282,7 @@ class TrackDataset(Dataset):
             track_info["frames_ids"][0] / video_fps,
             track_info["frames_ids"][-1] / video_fps,
         ]
-        return compute_timestamp_intersection(window, track_timespan) > 0.5
+        return compute_timestamp_intersection(window, track_timespan) > 0.2
 
     def __getitem__(self, index):
         video_name = self.videos_names[index]
