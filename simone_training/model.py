@@ -91,17 +91,21 @@ class VideoClassifier(nn.Module):
         num_videos = video_indices.max().item() + 1
         video_logits = torch.full(
             (num_videos,), -float("inf"), device=track_logits.device
-        )  # Max-pooling init
-        for i in range(len(track_logits)):
-            video_logits[video_indices[i]] = torch.max(
-                video_logits[video_indices[i]], track_logits[i]
-            )
+        )  # Initialize logits
+
+        video_logits = torch.scatter_reduce(
+            video_logits,  # Destination tensor
+            dim=0,
+            index=video_indices,
+            src=track_logits,
+            reduce="amax",
+            include_self=False,
+        )
 
         # Replace -inf with learnable score for videos with no tracks
         video_logits = torch.where(
             video_logits == -float("inf"), self.no_track_score, video_logits
         )
-
         # Final video-level prediction
         video_predictions = self.video_fc(video_logits.unsqueeze(-1)).squeeze(
             -1
