@@ -336,6 +336,7 @@ class TrackDataset(Dataset):
         }
         np.save("poses.npy", formatted_data["poses"].numpy())
         np.save("hands.npy", formatted_data["hands_regions"].numpy())
+        print(video_name, start_time)
         dvsdv
         return formatted_data
 
