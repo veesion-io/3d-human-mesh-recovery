@@ -261,8 +261,8 @@ class TrackDataset(Dataset):
                 dx = int(0.15 * height)
                 dy = int(0.21 * height)
                 # y = img.shape[1] - y
-                x1, y1 = (int(x - dx), int(y - 0.25 * dy))
-                x2, y2 = (int(x + dx), int(y + 1.75 * dy))
+                x1, y1 = (int(x - 0.25 * dx), int(y - dy))
+                x2, y2 = (int(x + 1.75 * dx), int(y + dy))
                 hand_region = img[x1:x2, y1:y2]
                 if 0 in hand_region.shape:
                     frame_hands_regions.append(
