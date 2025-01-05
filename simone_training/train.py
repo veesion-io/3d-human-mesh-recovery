@@ -66,13 +66,13 @@ for epoch in range(num_epochs):
         for data in batch:
             if data is None:  # Skip videos with invalid metadata
                 continue
-            video_idx += 1
             num_tracks = data["poses"].size(0)
             if num_tracks > 0:
                 poses_list.append(data["poses"].cuda())
                 hands_list.append(data["hands_regions"].cuda())
                 video_indices.extend([video_idx] * num_tracks)
             labels.append(data["label"])
+            video_idx += 1
 
         # If no valid videos in batch, skip the batch
         if not poses_list:
