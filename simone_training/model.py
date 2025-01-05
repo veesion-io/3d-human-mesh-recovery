@@ -98,7 +98,9 @@ class VideoClassifier(nn.Module):
             )
 
         # Replace -inf with learnable score for videos with no tracks
-        video_logits[video_logits == -float("inf")] = self.no_track_score
+        video_logits = torch.where(
+            video_logits == -float("inf"), self.no_track_score, video_logits
+        )
 
         # Final video-level prediction
         video_predictions = self.video_fc(video_logits.unsqueeze(-1)).squeeze(
