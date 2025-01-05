@@ -257,7 +257,7 @@ class TrackDataset(Dataset):
             points = torch.stack([y_coords, x_coords], dim=-1).long().data.cpu().numpy()
             height = np.sum((points[0, :] - points[1, :]) ** 2) ** 0.5
             frame_hands_regions = []
-            for y, x in person_hands:
+            for x, y in person_hands:
                 dx = int(0.15 * height)
                 dy = int(0.21 * height)
                 # y = img.shape[1] - y
