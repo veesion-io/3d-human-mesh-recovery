@@ -79,15 +79,17 @@ class VideoClassifier(nn.Module):
         super().__init__()
         self.keypoint_encoder = Keypoint3DTrajectoryEncoder(nk, keypoint_hidden_dim)
         self.hand_encoder = HandImageEncoder(output_dim=hand_feature_dim)
-        self.track_fc = nn.Sequential(
-            nn.Linear(keypoint_hidden_dim + hand_feature_dim, final_hidden_dim),
-            nn.ReLU(),
-            nn.Linear(final_hidden_dim, 1),
-        )
         self.no_track_score = nn.Parameter(
             torch.tensor(0.5)
         )  # Learnable score for no-track cases
         self.video_fc = nn.Sigmoid()  # Final video-level classification
+        self.track_fc = nn.Sequential(
+            nn.Linear(keypoint_hidden_dim + hand_feature_dim, final_hidden_dim),
+            nn.ReLU(),
+            nn.Linear(final_hidden_dim, final_hidden_dim // 2),
+            nn.ReLU(),
+            nn.Linear(final_hidden_dim // 2, 1),
+        )
 
     def forward(self, poses_list, hands_list, video_indices):
         """
