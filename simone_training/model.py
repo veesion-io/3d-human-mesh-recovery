@@ -6,6 +6,7 @@ import torch.nn.functional as F
 class Keypoint3DTrajectoryEncoder(nn.Module):
     def __init__(self, nk, hidden_dim):
         super().__init__()
+        self.hidden_dim = hidden_dim
         self.conv1 = nn.Conv1d(
             in_channels=nk * 3, out_channels=hidden_dim, kernel_size=3, padding=1
         )
@@ -24,7 +25,9 @@ class Keypoint3DTrajectoryEncoder(nn.Module):
         self.transformer = nn.Transformer(
             d_model=hidden_dim * 2, nhead=8, num_encoder_layers=2, dim_feedforward=256
         )
-        self.positional_encoding = nn.Parameter(torch.randn(1, 512, hidden_dim * 2))
+        self.positional_encoding = nn.Parameter(
+            torch.randn(1, 512, hidden_dim * 2)  # d_model must match GRU hidden_dim * 2
+        )
 
     def forward(self, keypoint_trajectories):
         B, T, nk, _ = keypoint_trajectories.shape
@@ -34,11 +37,15 @@ class Keypoint3DTrajectoryEncoder(nn.Module):
         x = F.relu(self.conv3(x))
         x = x.permute(0, 2, 1)  # (B, T, C)
 
-        # BiGRU
+        # GRU
         _, h_n = self.gru(x)
         h_n = h_n.view(B, -1)  # Concatenate forward and backward hidden states
 
         # Transformer with positional encoding
+        if self.positional_encoding.size(1) < T:
+            raise ValueError(
+                f"Positional encoding length ({self.positional_encoding.size(1)}) is less than input sequence length ({T})."
+            )
         x = x + self.positional_encoding[:, :T, :]
         x = x.permute(1, 0, 2)  # (T, B, C)
         x = self.transformer(x)
