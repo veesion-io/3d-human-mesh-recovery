@@ -12,20 +12,39 @@ class Keypoint3DTrajectoryEncoder(nn.Module):
         self.conv2 = nn.Conv1d(
             in_channels=hidden_dim, out_channels=hidden_dim, kernel_size=3, padding=1
         )
-        self.gru = nn.GRU(
-            input_size=hidden_dim, hidden_size=hidden_dim, batch_first=True
+        self.conv3 = nn.Conv1d(
+            in_channels=hidden_dim, out_channels=hidden_dim, kernel_size=5, padding=2
         )
+        self.gru = nn.GRU(
+            input_size=hidden_dim,
+            hidden_size=hidden_dim,
+            bidirectional=True,
+            batch_first=True,
+        )
+        self.transformer = nn.Transformer(
+            d_model=hidden_dim * 2, nhead=8, num_encoder_layers=2, dim_feedforward=256
+        )
+        self.positional_encoding = nn.Parameter(torch.randn(1, 512, hidden_dim * 2))
 
     def forward(self, keypoint_trajectories):
         B, T, nk, _ = keypoint_trajectories.shape
-        x = keypoint_trajectories.view(B, T, -1).permute(
-            0, 2, 1
-        )  # Flatten nk and 3 dimensions, transpose to (B, C, T)
+        x = keypoint_trajectories.view(B, T, -1).permute(0, 2, 1)  # (B, C, T)
         x = F.relu(self.conv1(x))
         x = F.relu(self.conv2(x))
-        x = x.permute(0, 2, 1)  # Transpose back to (B, T, C)
+        x = F.relu(self.conv3(x))
+        x = x.permute(0, 2, 1)  # (B, T, C)
+
+        # BiGRU
         _, h_n = self.gru(x)
-        return h_n.squeeze(0)  # (B, hidden_dim)
+        h_n = h_n.view(B, -1)  # Concatenate forward and backward hidden states
+
+        # Transformer with positional encoding
+        x = x + self.positional_encoding[:, :T, :]
+        x = x.permute(1, 0, 2)  # (T, B, C)
+        x = self.transformer(x)
+        x = x.permute(1, 0, 2)  # Back to (B, T, C)
+
+        return x.mean(dim=1)  # Aggregate temporal features
 
 
 import torchvision
