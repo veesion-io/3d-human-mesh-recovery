@@ -62,11 +62,11 @@ for epoch in range(num_epochs):
     train_loss = 0
     for batch in train_loader:
         poses_list, hands_list, video_indices, labels = [], [], [], []
-
-        for video_idx, data in enumerate(batch):
+        video_idx = 0
+        for data in batch:
             if data is None:  # Skip videos with invalid metadata
                 continue
-
+            video_idx += 1
             num_tracks = data["poses"].size(0)
             if num_tracks > 0:
                 poses_list.append(data["poses"].cuda())
