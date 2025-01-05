@@ -26,11 +26,11 @@ def compute_timestamp_intersection(window, timespan, normalize=True):
 
 def find_window_label(video_meta_data, window):
     actions_timespans = video_meta_data["actions_timespans"]
-    if "Dissimulation Sac" not in actions_timespans:
+    if "Dissimulation sac" not in actions_timespans:
         return False
     return any(
         compute_timestamp_intersection(timespan, window) > 0.5
-        for timespan in actions_timespans["Dissimulation Sac"]
+        for timespan in actions_timespans["Dissimulation sac"]
     )
 
 
