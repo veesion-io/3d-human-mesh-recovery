@@ -51,10 +51,10 @@ import torchvision
 
 
 class HandImageEncoder(nn.Module):
-    def __init__(self, output_dim=256):
+    def __init__(self, pretrained_model_name="resnet18", output_dim=256):
         super().__init__()
-        self.feature_extractor = torchvision.models.efficientnet_b1(
-            weights="IMAGENET1K_V2"
+        self.feature_extractor = torchvision.models.efficientnet_b0(
+            weights="IMAGENET1K_V1"
         )
         self.feature_extractor.fc = nn.Identity()  # Remove classification layer
         self.fc = nn.Linear(
