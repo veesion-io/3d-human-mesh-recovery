@@ -111,7 +111,7 @@ class VideoClassifier(nn.Module):
         )  # Learnable score for no-track cases
         self.video_fc = nn.Sigmoid()  # Final video-level classification
         self.track_fc = nn.Sequential(
-            nn.Linear(keypoint_hidden_dim + hand_feature_dim, final_hidden_dim),
+            nn.Linear(keypoint_hidden_dim * 2 + hand_feature_dim, final_hidden_dim),
             nn.ReLU(),
             nn.Linear(final_hidden_dim, final_hidden_dim // 2),
             nn.ReLU(),
