@@ -232,7 +232,7 @@ class TrackDataset(Dataset):
             reshaped_vertices -= camera_offset
             reshaped_vertices = reshaped_vertices.to("cuda")
 
-            hands_points = reshaped_vertices[0, 0, [2500, 5000]]
+            hands_points = reshaped_vertices[0, 0, [2500, 5500]]
             screen_points = video_camera.transform_points_screen(
                 hands_points, image_size=img.shape[:2]
             )
@@ -258,8 +258,8 @@ class TrackDataset(Dataset):
             height = np.sum((points[0, :] - points[1, :]) ** 2) ** 0.5
             frame_hands_regions = []
             for x, y in person_hands:
-                dx = int(0.15 * height)
-                dy = int(0.21 * height)
+                dx = int(0.21 * height)
+                dy = int(0.15 * height)
                 # y = img.shape[1] - y
                 x1, y1 = (int(x - 0.25 * dx), int(y - dy))
                 x2, y2 = (int(x + 1.75 * dx), int(y + dy))
