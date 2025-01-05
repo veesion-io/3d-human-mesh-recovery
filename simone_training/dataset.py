@@ -318,7 +318,7 @@ class TrackDataset(Dataset):
             )
             tracks_data.append(
                 (
-                    cropped_track_info["vertices"][:, ::120],
+                    cropped_track_info["vertices"],  # [:, ::120],
                     torch.from_numpy(np.array(hands_regions)),
                 )
             )

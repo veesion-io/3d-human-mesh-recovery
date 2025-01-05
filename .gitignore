@@ -23,7 +23,9 @@ eggs/
 lib64/
 parts/
 sdist/
+dirty_*
 var/
+*.npy
 wheels/
 pip-wheel-metadata/
 share/python-wheels/
