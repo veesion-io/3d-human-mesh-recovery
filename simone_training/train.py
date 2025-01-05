@@ -85,12 +85,13 @@ for epoch in range(num_epochs):
 
         optimizer.zero_grad()
         outputs = model(poses_list, hands_list, video_indices)
+        print(outputs, labels)
         loss = criterion(outputs, labels)
+        print(loss.item())
         loss.backward()
         optimizer.step()
 
         train_loss += loss.item()
-        print(loss.item(), outputs, labels)
 
     print(
         f"Epoch {epoch+1}/{num_epochs}, Train Loss: {train_loss / len(train_loader):.4f}"
