@@ -88,7 +88,7 @@ class VideoClassifier(nn.Module):
         track_logits = self.track_fc(track_features).squeeze(-1)  # (N,)
 
         # Aggregate track predictions back to videos
-        num_videos = len(video_indices.unique())
+        num_videos = video_indices.max().item() + 1
         video_logits = torch.full(
             (num_videos,), -float("inf"), device=track_logits.device
         )  # Max-pooling init
