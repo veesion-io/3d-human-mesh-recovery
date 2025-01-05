@@ -26,32 +26,40 @@ class Keypoint3DTrajectoryEncoder(nn.Module):
             d_model=hidden_dim * 2, nhead=8, num_encoder_layers=2, dim_feedforward=256
         )
         self.positional_encoding = nn.Parameter(
-            torch.randn(1, 512, hidden_dim * 2)  # d_model must match GRU hidden_dim * 2
+            torch.randn(1, 512, hidden_dim * 2)  # Adjusted for bidirectional GRU output
         )
 
     def forward(self, keypoint_trajectories):
         B, T, nk, _ = keypoint_trajectories.shape
+
+        # Flatten nk and 3 dimensions, transpose to (B, C, T)
         x = keypoint_trajectories.view(B, T, -1).permute(0, 2, 1)  # (B, C, T)
+
+        # Apply convolutions
         x = F.relu(self.conv1(x))
         x = F.relu(self.conv2(x))
         x = F.relu(self.conv3(x))
-        x = x.permute(0, 2, 1)  # (B, T, C)
 
-        # GRU
-        _, h_n = self.gru(x)
-        h_n = h_n.view(B, -1)  # Concatenate forward and backward hidden states
+        # Transpose back to (B, T, C)
+        x = x.permute(0, 2, 1)
 
-        # Transformer with positional encoding
+        # Apply GRU
+        x, _ = self.gru(x)  # (B, T, hidden_dim * 2)
+
+        # Positional encoding: Ensure it matches the sequence length
         if self.positional_encoding.size(1) < T:
             raise ValueError(
                 f"Positional encoding length ({self.positional_encoding.size(1)}) is less than input sequence length ({T})."
             )
         x = x + self.positional_encoding[:, :T, :]
-        x = x.permute(1, 0, 2)  # (T, B, C)
+
+        # Transformer expects input as (T, B, C)
+        x = x.permute(1, 0, 2)
         x = self.transformer(x)
         x = x.permute(1, 0, 2)  # Back to (B, T, C)
 
-        return x.mean(dim=1)  # Aggregate temporal features
+        # Aggregate temporal features
+        return x.mean(dim=1)  # (B, hidden_dim * 2)
 
 
 import torchvision
