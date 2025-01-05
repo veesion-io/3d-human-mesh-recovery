@@ -334,6 +334,9 @@ class TrackDataset(Dataset):
             "hands_regions": torch.stack([x[1] for x in tracks_data]),
             "label": label,
         }
+        np.save("poses.npy", formatted_data["poses"].numpy())
+        np.save("hands.npy", formatted_data["hands_regions"].numpy())
+        dvsdv
         return formatted_data
 
 
