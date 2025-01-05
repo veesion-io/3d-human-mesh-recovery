@@ -3,6 +3,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
+import torch.nn as nn
+import torch.nn.functional as F
+from torch.nn import TransformerEncoder, TransformerEncoderLayer
+
+
 class Keypoint3DTrajectoryEncoder(nn.Module):
     def __init__(self, nk, hidden_dim):
         super().__init__()
@@ -22,11 +27,15 @@ class Keypoint3DTrajectoryEncoder(nn.Module):
             bidirectional=True,
             batch_first=True,
         )
-        self.transformer = nn.Transformer(
-            d_model=hidden_dim * 2, nhead=8, num_encoder_layers=2, dim_feedforward=256
+
+        # Replace Transformer with TransformerEncoder
+        encoder_layer = TransformerEncoderLayer(
+            d_model=hidden_dim * 2, nhead=8, dim_feedforward=256
         )
+        self.transformer_encoder = TransformerEncoder(encoder_layer, num_layers=2)
+
         self.positional_encoding = nn.Parameter(
-            torch.randn(1, 512, hidden_dim * 2)  # Adjusted for bidirectional GRU output
+            torch.randn(1, 512, hidden_dim * 2)  # Match GRU output size (bidirectional)
         )
 
     def forward(self, keypoint_trajectories):
@@ -46,16 +55,16 @@ class Keypoint3DTrajectoryEncoder(nn.Module):
         # Apply GRU
         x, _ = self.gru(x)  # (B, T, hidden_dim * 2)
 
-        # Positional encoding: Ensure it matches the sequence length
+        # Positional encoding
         if self.positional_encoding.size(1) < T:
             raise ValueError(
                 f"Positional encoding length ({self.positional_encoding.size(1)}) is less than input sequence length ({T})."
             )
         x = x + self.positional_encoding[:, :T, :]
 
-        # Transformer expects input as (T, B, C)
+        # TransformerEncoder expects input as (T, B, C)
         x = x.permute(1, 0, 2)
-        x = self.transformer(x)
+        x = self.transformer_encoder(x)
         x = x.permute(1, 0, 2)  # Back to (B, T, C)
 
         # Aggregate temporal features
