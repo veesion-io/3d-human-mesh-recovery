@@ -118,7 +118,7 @@ class VideoClassifier(nn.Module):
             nn.Linear(final_hidden_dim // 2, 1),
         )
 
-    def forward(self, poses_list, hands_list, video_indices):
+    def forward(self, poses_list, hands_list, video_indices, num_videos):
         """
         Args:
             poses_list: Tensor of shape (N, T, nk, 3), all tracks concatenated
@@ -139,7 +139,6 @@ class VideoClassifier(nn.Module):
         track_logits = self.track_fc(track_features).squeeze(-1)  # (N,)
 
         # Aggregate track predictions back to videos
-        num_videos = video_indices.max().item() + 1
         video_logits = torch.full(
             (num_videos,), -float("inf"), device=track_logits.device
         )  # Initialize logits

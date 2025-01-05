@@ -84,7 +84,7 @@ for epoch in range(num_epochs):
         labels = torch.tensor(labels, dtype=torch.float32).cuda()
 
         optimizer.zero_grad()
-        outputs = model(poses_list, hands_list, video_indices)
+        outputs = model(poses_list, hands_list, video_indices, len(labels))
         print(outputs, labels)
         loss = criterion(outputs, labels)
         print(loss.item())
