@@ -107,9 +107,9 @@ class VideoClassifier(nn.Module):
         self.keypoint_encoder = Keypoint3DTrajectoryEncoder(nk, keypoint_hidden_dim)
         self.hand_encoder = HandImageEncoder(output_dim=hand_feature_dim)
         self.no_track_score = nn.Parameter(
-            torch.tensor(0.5)
+            torch.tensor(-1)
         )  # Learnable score for no-track cases
-        self.video_fc = nn.Sigmoid()  # Final video-level classification
+        self.sigmoid = nn.Sigmoid()  # Final video-level classification
         self.track_fc = nn.Sequential(
             nn.Linear(keypoint_hidden_dim * 2 + hand_feature_dim, final_hidden_dim),
             nn.ReLU(),
@@ -157,9 +157,7 @@ class VideoClassifier(nn.Module):
             video_logits == -float("inf"), self.no_track_score, video_logits
         )
         # Final video-level prediction
-        video_predictions = self.video_fc(video_logits.unsqueeze(-1)).squeeze(
-            -1
-        )  # (B,)
+        video_predictions = self.sigmoid(video_logits.unsqueeze(-1)).squeeze(-1)  # (B,)
 
         return video_predictions
 
