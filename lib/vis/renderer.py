@@ -3,7 +3,7 @@
 import cv2
 import torch
 import numpy as np
-from math import atan, degrees
+from math import atan, degrees, radians
 
 from pytorch3d.renderer import (
     PerspectiveCameras,
@@ -379,8 +379,12 @@ class Renderer:
                 np.sum((extremal_points[0, :] - extremal_points[1, :]) ** 2) ** 0.5
             )
 
+            # Assume normalized focal_length (focal length scaled to 1.0 for simplicity)
             focal_length = cameras.focal_length[0, 0].item()  # Extract focal length
             fov = 2 * degrees(atan(1.0 / (2 * focal_length)))  # FOV in degrees
+
+            # 2. Z-coordinate (Depth)
+            # Transform object_center to the camera's view space
             camera_transform = cameras.get_world_to_view_transform()
             view_space_coords = camera_transform.transform_points(
                 hands_points[0][None, :]
@@ -394,9 +398,7 @@ class Renderer:
                 / (
                     z_coordinate
                     * 2
-                    * torch.tan(
-                        torch.radians(torch.tensor(fov / 2, device=cameras.device))
-                    )
+                    * torch.tan(torch.tensor(radians(fov / 2), device=cameras.device))
                 )
             )
 
