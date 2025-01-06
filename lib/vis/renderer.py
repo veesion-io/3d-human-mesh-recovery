@@ -3,6 +3,7 @@
 import cv2
 import torch
 import numpy as np
+from math import atan, degrees
 
 from pytorch3d.renderer import (
     PerspectiveCameras,
@@ -374,11 +375,35 @@ class Renderer:
                 torch.stack([y_coords, x_coords], dim=-1).long().data.cpu().numpy()
             )
             extremal_points = human[0, [5004, 4517]].data.cpu().numpy()
-            height = np.sum((extremal_points[0, :] - extremal_points[1, :]) ** 2) ** 0.5
+            human_scale = (
+                np.sum((extremal_points[0, :] - extremal_points[1, :]) ** 2) ** 0.5
+            )
+
+            focal_length = cameras.focal_length[0, 0].item()  # Extract focal length
+            fov = 2 * degrees(atan(1.0 / (2 * focal_length)))  # FOV in degrees
+            camera_transform = cameras.get_world_to_view_transform()
+            view_space_coords = camera_transform.transform_points(
+                hands_points[0]
+            )  # Add batch dim
+            z_coordinate = view_space_coords[0, 2]  # Extract z (depth)
+
+            # 3. Calculate Rendered Height
+            rendered_height = (
+                human_scale
+                * self.image_sizes[0][0]
+                / (
+                    z_coordinate
+                    * 2
+                    * torch.tan(
+                        torch.radians(torch.tensor(fov / 2, device=cameras.device))
+                    )
+                )
+            )
+
             heights.append(
                 (
                     extremal_points,
-                    height,
+                    rendered_height,
                 )
             )
 
