@@ -470,7 +470,7 @@ def create_meshes(verts, faces, colors):
     :param colors (B, V, 3)
     """
     textures = TexturesVertex(verts_features=colors)
-    meshes = Meshes(verts=verts)  # , faces=faces, textures=textures)
+    meshes = Meshes(verts=verts, faces=None, textures=None)
     return join_meshes_as_scene(meshes)
 
 
