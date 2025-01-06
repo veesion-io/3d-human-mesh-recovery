@@ -65,6 +65,7 @@ for epoch in range(num_epochs):
     model.train()
     train_loss = 0
     num_samples_seen = 0
+
     for batch in train_loader:
         poses_list, hands_list, video_indices, labels = [], [], [], []
         video_idx = 0

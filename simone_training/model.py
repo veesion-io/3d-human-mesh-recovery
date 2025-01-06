@@ -141,7 +141,7 @@ class VideoClassifier(nn.Module):
         # Aggregate track predictions back to videos
         video_logits = torch.full(
             (num_videos,), -float("inf"), device=track_logits.device
-        )  # Initialize logits
+        ).half()  # Initialize logits
 
         video_logits = torch.scatter_reduce(
             video_logits,  # Destination tensor
