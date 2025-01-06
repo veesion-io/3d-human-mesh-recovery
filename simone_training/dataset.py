@@ -215,7 +215,8 @@ class TrackDataset(Dataset):
             "hands_regions": torch.stack([x[1] for x in tracks_data]),
             "label": label,
         }
-        # np.save("poses.npy", formatted_data["poses"].numpy())
+        os.makedirs("inputs", exist_ok=True)
+        np.save(f"inputs/{os.path.splitext(video_barename)[0]}.npy", formatted_data)
         # np.save("hands.npy", formatted_data["hands_regions"].numpy())
         # print(video_name, start_time)
         # dvsdv
