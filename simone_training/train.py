@@ -57,14 +57,15 @@ model = VideoClassifier(
 ).cuda()
 
 optimizer = Adam(model.parameters(), lr=learning_rate)
-criterion = nn.BCELoss()
+criterion = nn.BCEWithLogitsLoss()
 
 # Training loop
 for epoch in range(num_epochs):
     # Training phase
     model.train()
     train_loss = 0
-    num_samples_seen = 0
+    correct = 0
+    total = 0
 
     for batch in train_loader:
         poses_list, hands_list, video_indices, labels = [], [], [], []
@@ -96,11 +97,17 @@ for epoch in range(num_epochs):
             optimizer.step()
 
         train_loss += loss.item()
-        num_samples_seen += len(labels)
+        predictions = (outputs > 0.0).float()
+        correct += (predictions == labels).sum().item()
+        total += labels.size(0)
 
     avg_train_loss = train_loss / train_loss
+    train_accuracy = correct / total if total > 0 else 0
     writer.add_scalar("Loss/Train", avg_train_loss, epoch + 1)
-    print(f"Epoch {epoch+1}/{num_epochs}, Train Loss: {avg_train_loss:.4f}")
+    writer.add_scalar("Accuracy/Train", train_accuracy, epoch + 1)
+    print(
+        f"Epoch {epoch+1}/{num_epochs}, Train Loss: {avg_train_loss:.4f}, Train Accuracy: {train_accuracy:.4f}"
+    )
 
     # Validation phase
     model.eval()
@@ -134,7 +141,7 @@ for epoch in range(num_epochs):
                 loss = criterion(outputs, labels)
             val_loss += loss.item()
 
-            predictions = (outputs > 0.5).float()
+            predictions = (outputs > 0.0).float()
             correct += (predictions == labels).sum().item()
             total += labels.size(0)
 
