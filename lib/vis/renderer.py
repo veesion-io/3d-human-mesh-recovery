@@ -444,7 +444,7 @@ def restraighten_vertices_and_cameras(verts_list, cameras):
     for verts in verts_list:
         transformed_verts = world_to_view.transform_points(verts)
         transformed_verts_list.append(transformed_verts)
-    if verts_list:
+    if len(verts_list):
         transformed_verts_list = torch.stack(transformed_verts_list)
     return transformed_verts_list
 
