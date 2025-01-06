@@ -75,5 +75,4 @@ export_tram(
     contact_frames=contact_frames,
     floor_scale=args.floor_scale,
     bin_size=args.bin_size,
-    video_fps=video_fps,
 )
