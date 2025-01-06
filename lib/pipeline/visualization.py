@@ -335,7 +335,9 @@ def visualize_tram(
                 # y = img.shape[1] - y
                 x1, y1 = (int(x - dx), int(y - 0.25 * dy))
                 x2, y2 = (int(x + dx), int(y + 1.75 * dy))
-                rend[y1:y2, x1:x2] = img[y1:y2, x1:x2]
+                rend[y1:y2, x1:x2] = (
+                    0.5 * rend[y1:y2, x1:x2] + 0.5 * img[y1:y2, x1:x2]
+                ).astype(np.uint8)
                 # cv2.rectangle(img, top_left, bottom_right, color, thickness)
         # out = np.concatenate([img, rend], axis=1)
         writer.append_data(rend)

@@ -375,7 +375,7 @@ class Renderer:
                 torch.stack([y_coords, x_coords], dim=-1).long().data.cpu().numpy()
             )
             extremal_points = human[0, [5004, 4517]].data.cpu().numpy()
-            human_scale = 3 * (
+            human_scale = 2.2 * (
                 np.sum((extremal_points[0, :] - extremal_points[1, :]) ** 2) ** 0.5
             )
 
