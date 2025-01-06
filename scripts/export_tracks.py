@@ -67,7 +67,8 @@ else:
     contact_frames = np.arange(len(imgfiles))[idx]
 
 # Render video
-print("Visualize results ...")
+print("Exporting results ...")
+os.makedirs("tracks", exist_ok=True)
 export_tram(
     seq_folder,
     video_barename,
