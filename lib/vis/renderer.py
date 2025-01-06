@@ -349,20 +349,19 @@ class Renderer:
         # verts_ += [gv]
         # faces_ += [gf]
         # colors_ += [gc[..., :3]]
+        neutral_cameras = PerspectiveCameras(
+            focal_length=cameras.focal_length,
+            principal_point=cameras.principal_point,
+            R=torch.eye(3, device=cameras.device)[None, ...],  # Identity rotation
+            T=torch.zeros(1, 3, device=cameras.device),  # Zero translation
+            device=cameras.device,
+        )
         if len(verts_):
             mesh = create_meshes(verts_, faces_, colors_)
             materials = Materials(device=self.device, shininess=0)
             results = self.renderer(
                 mesh,
-                cameras=PerspectiveCameras(
-                    focal_length=cameras.focal_length,
-                    principal_point=cameras.principal_point,
-                    R=torch.eye(3, device=cameras.device)[
-                        None, ...
-                    ],  # Identity rotation
-                    T=torch.zeros(1, 3, device=cameras.device),  # Zero translation
-                    device=cameras.device,
-                ),
+                cameras=neutral_cameras,
                 lights=lights,
                 materials=materials,
             )
@@ -374,7 +373,7 @@ class Renderer:
             hands_points = human[0, [2500, 5500]].to("cuda")
 
             # Project points to the screen space
-            screen_points = cameras.transform_points_screen(
+            screen_points = neutral_cameras.transform_points_screen(
                 hands_points, image_size=self.image_sizes[0]
             )
 
@@ -392,12 +391,14 @@ class Renderer:
             )
 
             # Assume normalized focal_length (focal length scaled to 1.0 for simplicity)
-            focal_length = cameras.focal_length[0, 0].item()  # Extract focal length
+            focal_length = neutral_cameras.focal_length[
+                0, 0
+            ].item()  # Extract focal length
             fov = 2 * degrees(atan(1.0 / (2 * focal_length)))  # FOV in degrees
 
             # 2. Z-coordinate (Depth)
             # Transform object_center to the camera's view space
-            camera_transform = cameras.get_world_to_view_transform()
+            camera_transform = neutral_cameras.get_world_to_view_transform()
             view_space_coords = camera_transform.transform_points(
                 hands_points[0][None, :]
             )  # Add batch dim
@@ -410,7 +411,9 @@ class Renderer:
                 / (
                     z_coordinate
                     * 2
-                    * torch.tan(torch.tensor(radians(fov / 2), device=cameras.device))
+                    * torch.tan(
+                        torch.tensor(radians(fov / 2), device=neutral_cameras.device)
+                    )
                 )
             )
 
