@@ -329,6 +329,15 @@ class Renderer:
         :param faces (F, 3)
         :param colors (B, 3)
         """
+        # Extract original camera transformations
+        R, T = extract_camera_transformations(cameras)
+
+        # Transform vertices to align with the neutral camera
+        transformed_verts_list = transform_vertices_to_neutral(verts_list, R, T)
+
+        # Create the neutral camera
+        neutral_camera = create_neutral_camera(cameras)
+
         # (B, V, 3), (B, F, 3), (B, V, 3)
         verts_list = restraighten_vertices_and_cameras(verts_list, cameras)
         verts_, faces_, colors_ = [], [], []
@@ -429,27 +438,52 @@ class Renderer:
         return image, np.array(image_indices), heights
 
 
-def restraighten_vertices_and_cameras(verts_list, cameras):
+def extract_camera_transformations(cameras):
+    """
+    Extract rotation (R) and translation (T) from the cameras object.
+
+    :param cameras: A PyTorch3D cameras object.
+    :return: Rotation matrix (R) and translation vector (T).
+    """
+    R = cameras.R  # (B, 3, 3)
+    T = cameras.T  # (B, 3)
+    return R, T
+
+
+def transform_vertices_to_neutral(verts_list, R, T):
     """
     Transforms vertices to align with a neutral camera.
 
-    :param verts_list: List of (N, V, 3) tensors representing vertices of each object.
-    :param cameras: A PyTorch3D cameras object.
-    :return: A new verts_list where vertices are transformed for rendering with a neutral camera.
+    :param verts_list: List of (B, V, 3) tensors representing vertices of each object.
+    :param R: (B, 3, 3) rotation matrices from the cameras.
+    :param T: (B, 3) translation vectors from the cameras.
+    :return: Transformed vertices aligned with a neutral camera.
     """
-    # Get the world-to-view transformation
-    world_to_view = cameras.get_world_to_view_transform()
-
-    # Invert the transformation to get view-to-world
-    view_to_world = world_to_view.inverse()
-
-    # Transform vertices to align with the neutral camera
     transformed_verts_list = []
     for verts in verts_list:
-        transformed_verts = view_to_world.transform_points(verts)
-        transformed_verts_list.append(transformed_verts)
-
+        # Apply rotation and translation to bring vertices into the neutral camera space
+        verts_transformed = torch.einsum(
+            "bij,bvj->bvi", R.transpose(1, 2), verts - T[:, None, :]
+        )
+        transformed_verts_list.append(verts_transformed)
     return transformed_verts_list
+
+
+def create_neutral_camera(cameras):
+    """
+    Creates a neutral camera that matches the transformed vertices.
+
+    :param cameras: A PyTorch3D cameras object.
+    :return: A new cameras object with no rotation and zero translation.
+    """
+    neutral_camera = PerspectiveCameras(
+        focal_length=cameras.focal_length,
+        principal_point=cameras.principal_point,
+        R=torch.eye(3, device=cameras.device)[None, ...],  # Identity rotation
+        T=torch.zeros(1, 3, device=cameras.device),  # Zero translation
+        device=cameras.device,
+    )
+    return neutral_camera
 
 
 def prep_shared_geometry(verts, faces, colors):
