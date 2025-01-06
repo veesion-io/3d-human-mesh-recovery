@@ -349,13 +349,15 @@ class Renderer:
         # verts_ += [gv]
         # faces_ += [gf]
         # colors_ += [gc[..., :3]]
-        neutral_cameras = PerspectiveCameras(
-            focal_length=cameras.focal_length,
-            principal_point=cameras.principal_point,
-            R=torch.eye(3, device=cameras.device)[None, ...],  # Identity rotation
-            T=torch.zeros(1, 3, device=cameras.device),  # Zero translation
-            device=cameras.device,
-        )
+        neutral_cameras = cameras
+        # PerspectiveCameras(
+        #     focal_length=cameras.focal_length,
+        #     principal_point=cameras.principal_point,
+        #     R=torch.eye(3, device=cameras.device)[None, ...],  # Identity rotation
+        #     T=torch.zeros(1, 3, device=cameras.device),  # Zero translation
+        #     device=cameras.device,
+        # )
+        # Correct transformed vertices for the principal point shift
         if len(verts_):
             mesh = create_meshes(verts_, faces_, colors_)
             materials = Materials(device=self.device, shininess=0)
@@ -470,7 +472,7 @@ def create_meshes(verts, faces, colors):
     :param colors (B, V, 3)
     """
     textures = TexturesVertex(verts_features=colors)
-    meshes = Meshes(verts=verts, faces=None, textures=None)
+    meshes = Meshes(verts=verts)  # , faces=faces, textures=textures)
     return join_meshes_as_scene(meshes)
 
 
