@@ -296,8 +296,8 @@ def visualize_tram(
     renderer.set_ground(scale, cx.item(), cz.item())
 
     for i in tqdm(range(len(imgfiles))):
-        if i % 2 or i > 60:
-            continue
+        # if i % 2 or i > 60:
+        #     continue
 
         img = np.ascontiguousarray(cv2.imread(imgfiles[i])[:, :, ::-1], dtype=np.uint8)
 
@@ -343,7 +343,7 @@ def visualize_tram(
                 # cv2.rectangle(img, top_left, bottom_right, color, thickness)
         # out = np.concatenate([img, rend], axis=1)
         writer.append_data(rend)
-        if i == 10:
-            cv2.imwrite("hey.png", rend)
+        # if i == 10:
+        #     cv2.imwrite("hey.png", rend)
 
     writer.close()
