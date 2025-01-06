@@ -296,6 +296,9 @@ def visualize_tram(
     renderer.set_ground(scale, cx.item(), cz.item())
 
     for i in tqdm(range(len(imgfiles))):
+        if i % 2 or i > 100:
+            continue
+
         img = np.ascontiguousarray(cv2.imread(imgfiles[i])[:, :, ::-1], dtype=np.uint8)
 
         verts_list = track_verts[i]
