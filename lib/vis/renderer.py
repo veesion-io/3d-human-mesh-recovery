@@ -373,21 +373,11 @@ class Renderer:
             image_indices.append(
                 torch.stack([y_coords, x_coords], dim=-1).long().data.cpu().numpy()
             )
-            extremal_points = human[0, [0, 5000]].to("cuda")
-            # Project points to the screen space
-            screen_points = cameras.transform_points_screen(
-                extremal_points, image_size=self.image_sizes[0]
-            )
-
-            # Extract screen coordinates
-            x_coords = screen_points[..., 0]
-            y_coords = screen_points[..., 1]
-            points = torch.stack([y_coords, x_coords], dim=-1).long().data.cpu().numpy()
-            # Convert to image indices (integer pixel indices)
-            height = np.sum((points[0, :] - points[1, :]) ** 2) ** 0.5
+            extremal_points = human[0, [5004, 4517]].data.cpu().numpy()
+            height = np.sum((extremal_points[0, :] - extremal_points[1, :]) ** 2) ** 0.5
             heights.append(
                 (
-                    points,
+                    extremal_points,
                     height,
                 )
             )
