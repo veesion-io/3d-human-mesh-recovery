@@ -91,9 +91,9 @@ for epoch in range(num_epochs):
         optimizer.zero_grad()
         with torch.amp.autocast("cuda"):  # Mixed precision training
             outputs = model(poses_list, hands_list, video_indices, len(labels))
-        loss = criterion(outputs, labels)
-        loss.backward()
-        optimizer.step()
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
 
         train_loss += loss.item()
         num_samples_seen += len(labels)
@@ -131,7 +131,7 @@ for epoch in range(num_epochs):
             labels = torch.tensor(labels, dtype=torch.float32).cuda()
             with torch.amp.autocast("cuda"):
                 outputs = model(poses_list, hands_list, video_indices, len(labels))
-            loss = criterion(outputs, labels)
+                loss = criterion(outputs, labels)
             val_loss += loss.item()
 
             predictions = (outputs > 0.5).float()
