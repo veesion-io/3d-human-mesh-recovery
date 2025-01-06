@@ -160,7 +160,7 @@ def export_tram(
         "frames_ids": tracks_frames_ids,
         "hands": tracks_hands,
     }
-    np.dump(f"tracks/{video_barename}.npy", formatted_tracks)
+    np.save(f"tracks/{video_barename}.npy", formatted_tracks)
 
 
 def visualize_tram(
