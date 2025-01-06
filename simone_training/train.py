@@ -29,7 +29,6 @@ writer = SummaryWriter(log_dir="tensorboard_logs")
 train_dataset = TrackDataset(
     "simone_subset.json",
     7.0,
-    tracks_path="results",
     target_fps=3.0,
     hands_height=128,
     hands_width=128,
@@ -41,7 +40,6 @@ train_loader = DataLoader(
 val_dataset = TrackDataset(
     "simone_subset.json",
     7.0,
-    tracks_path="results",
     target_fps=3.0,
     hands_height=128,
     hands_width=128,
