@@ -330,6 +330,9 @@ class Renderer:
         :param colors (B, 3)
         """
         # (B, V, 3), (B, F, 3), (B, V, 3)
+        verts_list, cameras = self.restraighten_vertices_and_cameras(
+            verts_list, cameras
+        )
         verts_, faces_, colors_ = [], [], []
         for i, verts in enumerate(verts_list):
             colors = colors_list[[i]]
@@ -410,6 +413,40 @@ class Renderer:
             )
 
         return image, np.array(image_indices), heights
+
+    def restraighten_vertices_and_cameras(self, verts_list, cameras):
+        """
+        Straightens the vertices and adjusts the camera to match the new orientation.
+
+        :param verts_list: List of (N, V, 3) tensors representing vertices of each object.
+        :param cameras: A PyTorch3D cameras object.
+        :return: A tuple (straightened_verts_list, new_cameras).
+        """
+        # Get the world-to-view transformation
+        world_to_view = cameras.get_world_to_view_transform()
+
+        # Invert the transformation to get view-to-world (restraighten)
+        view_to_world = world_to_view.inverse()
+
+        # Apply the inverse transformation to each vertex set in the verts_list
+        straightened_verts_list = []
+        for verts in verts_list:
+            # Add a homogeneous coordinate (N, V, 4)
+            verts_h = torch.cat([verts, torch.ones_like(verts[..., :1])], dim=-1)
+            # Transform using the view-to-world transform
+            straightened_verts = view_to_world.transform_points(verts_h)[..., :3]
+            straightened_verts_list.append(straightened_verts)
+
+        # Create a new "neutral" camera at the canonical position
+        new_cameras = PerspectiveCameras(
+            focal_length=cameras.focal_length,
+            principal_point=cameras.principal_point,
+            R=torch.eye(3, device=cameras.device)[None, ...],  # Identity rotation
+            T=torch.zeros(1, 3, device=cameras.device),  # Zero translation
+            device=cameras.device,
+        )
+
+        return straightened_verts_list, new_cameras
 
 
 def prep_shared_geometry(verts, faces, colors):
