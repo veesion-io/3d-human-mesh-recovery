@@ -198,7 +198,13 @@ class TrackDataset(Dataset):
             )
         label = find_window_label(video_meta_data, [start_time, end_time])
         if len(tracks_data) == 0:
-            print("No track", video_name, start_time, video_tracks["frames_ids"])
+            print(
+                "No track",
+                video_name,
+                start_time,
+                video_info["fps"],
+                video_tracks["frames_ids"],
+            )
             return {
                 "poses": torch.empty(0),
                 "hands_regions": torch.empty(0),
