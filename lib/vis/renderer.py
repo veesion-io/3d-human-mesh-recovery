@@ -425,7 +425,7 @@ class Renderer:
                 )
             )
 
-        return image, np.array(image_indices), heights
+        return verts_list, image, np.array(image_indices), heights
 
 
 def restraighten_vertices_and_cameras(verts_list, cameras):
@@ -438,9 +438,6 @@ def restraighten_vertices_and_cameras(verts_list, cameras):
     """
     # Get the world-to-view transformation
     world_to_view = cameras.get_world_to_view_transform()
-
-    # # Invert the transformation to get view-to-world
-    # view_to_world = world_to_view.inverse()
 
     # Transform vertices to align with the neutral camera
     transformed_verts_list = []

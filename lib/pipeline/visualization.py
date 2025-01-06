@@ -145,7 +145,7 @@ def export_tram(
 
         faces = renderer.faces.clone().squeeze(0)
         cameras, lights = renderer.create_camera_from_cv(cam_R[[i]], cam_T[[i]])
-        _, hands, heights = renderer.render_with_ground_multiple(
+        verts_list, _, hands, heights = renderer.render_with_ground_multiple(
             verts_list, faces, verts_colors, cameras, lights
         )
         if len(verts_list) > 0:
@@ -316,7 +316,7 @@ def visualize_tram(
         cameras, lights = renderer.create_camera_from_cv(cam_R[[i]], cam_T[[i]])
         # print(cam_R[[i]], cam_T[[i]])
         # vsddsv
-        rend, hands, heights = renderer.render_with_ground_multiple(
+        _, rend, hands, heights = renderer.render_with_ground_multiple(
             verts_list, faces, verts_colors, cameras, lights
         )
         # Rectangle size
