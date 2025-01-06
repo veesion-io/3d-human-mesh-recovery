@@ -110,10 +110,12 @@ class TrackDataset(Dataset):
         )
         return {
             "frames_ids": adjusted_frames_ids,
-            "vertices": [
-                video_tracks["vertices"][frame_id][track_id]
-                for frame_id in adjusted_frames_ids
-            ],
+            "vertices": np.array(
+                [
+                    video_tracks["vertices"][frame_id][track_id]
+                    for frame_id in adjusted_frames_ids
+                ]
+            ),
         }
 
     def load_hands_regions(
@@ -188,6 +190,7 @@ class TrackDataset(Dataset):
             hands_regions = self.load_hands_regions(
                 track_id, video_name, video_tracks, cropped_track_info
             )
+            print(cropped_track_info["vertices"].shape)
             tracks_data.append(
                 (
                     cropped_track_info["vertices"],
