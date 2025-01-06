@@ -444,7 +444,7 @@ def restraighten_vertices_and_cameras(verts_list, cameras):
         focal_length=cameras.focal_length,
         principal_point=cameras.principal_point,
         R=torch.eye(3, device=cameras.device)[None, ...],  # Identity rotation
-        T=-canonical_translation,  # Adjust translation to align with the canonical frame
+        T=canonical_translation,  # Adjust translation to align with the canonical frame
         device=cameras.device,
     )
 
