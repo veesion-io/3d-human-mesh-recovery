@@ -296,7 +296,7 @@ def visualize_tram(
     renderer.set_ground(scale, cx.item(), cz.item())
 
     for i in tqdm(range(len(imgfiles))):
-        if i % 2 or i > 100:
+        if i % 2 or i > 60:
             continue
 
         img = np.ascontiguousarray(cv2.imread(imgfiles[i])[:, :, ::-1], dtype=np.uint8)
@@ -314,8 +314,8 @@ def visualize_tram(
 
         faces = renderer.faces.clone().squeeze(0)
         cameras, lights = renderer.create_camera_from_cv(cam_R[[i]], cam_T[[i]])
-        print(cam_R[[i]], cam_T[[i]])
-        vsddsv
+        # print(cam_R[[i]], cam_T[[i]])
+        # vsddsv
         rend, hands, heights = renderer.render_with_ground_multiple(
             verts_list, faces, verts_colors, cameras, lights
         )
