@@ -112,7 +112,7 @@ class TrackDataset(Dataset):
             "frames_ids": adjusted_frames_ids,
             "vertices": np.array(
                 [
-                    video_tracks["vertices"][frame_id][track_id]
+                    video_tracks["vertices"][frame_id][track_id][0]
                     for frame_id in adjusted_frames_ids
                 ]
             ),
@@ -190,10 +190,9 @@ class TrackDataset(Dataset):
             hands_regions = self.load_hands_regions(
                 track_id, video_name, video_tracks, cropped_track_info
             )
-            print(cropped_track_info["vertices"].shape)
             tracks_data.append(
                 (
-                    cropped_track_info["vertices"],
+                    torch.from_numpy(cropped_track_info["vertices"]),
                     torch.from_numpy(np.array(hands_regions)),
                 )
             )
