@@ -445,7 +445,7 @@ def restraighten_vertices_and_cameras(verts_list, cameras):
         transformed_verts = world_to_view.transform_points(verts)
         transformed_verts_list.append(transformed_verts)
 
-    return transformed_verts_list
+    return torch.stack(transformed_verts_list)
 
 
 def prep_shared_geometry(verts, faces, colors):
