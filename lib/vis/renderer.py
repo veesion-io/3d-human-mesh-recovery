@@ -427,19 +427,24 @@ def restraighten_vertices_and_cameras(verts_list, cameras):
     # Invert the transformation to get view-to-world (restraighten)
     view_to_world = world_to_view.inverse()
 
+    # Extract the canonical camera translation
+    canonical_translation = view_to_world.get_matrix()[
+        ..., :3, 3
+    ]  # Extract translation part
+
     # Apply the inverse transformation to each vertex set in the verts_list
     straightened_verts_list = []
     for verts in verts_list:
-        # Transform using the view-to-world transform (no need to manually add homogeneous coordinates)
+        # Transform using the view-to-world transform
         straightened_verts = view_to_world.transform_points(verts)
         straightened_verts_list.append(straightened_verts)
 
-    # Create a new "neutral" camera at the canonical position
+    # Create a new camera at the canonical position
     new_cameras = PerspectiveCameras(
         focal_length=cameras.focal_length,
         principal_point=cameras.principal_point,
         R=torch.eye(3, device=cameras.device)[None, ...],  # Identity rotation
-        T=torch.zeros(1, 3, device=cameras.device),  # Zero translation
+        T=-canonical_translation,  # Adjust translation to align with the canonical frame
         device=cameras.device,
     )
 
