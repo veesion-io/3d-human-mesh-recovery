@@ -461,7 +461,7 @@ def transform_vertices_to_neutral(verts_list, R, T):
     for verts in verts_list:
         # Apply rotation and translation to bring vertices into the neutral camera space
         verts_transformed = torch.einsum(
-            "bij,bvj->bvi", R.transpose(1, 2), verts - T[:, None, :]
+            "bij,bvj->bvi", -R.transpose(1, 2), verts - T[:, None, :]
         )
         # verts_transformed[..., 1] = -verts_transformed[..., 1]
         transformed_verts_list.append(verts_transformed)
