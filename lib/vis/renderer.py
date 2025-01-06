@@ -463,7 +463,7 @@ def transform_vertices_to_neutral(verts_list, R, T):
         verts_transformed = torch.einsum(
             "bij,bvj->bvi", R.transpose(1, 2), verts - T[:, None, :]
         )
-        verts_transformed[..., 2] = -verts_transformed[..., 2]
+        verts_transformed[..., 1] = -verts_transformed[..., 1]
         transformed_verts_list.append(verts_transformed)
     return transformed_verts_list
 
