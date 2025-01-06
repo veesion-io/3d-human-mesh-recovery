@@ -172,7 +172,7 @@ class TrackDataset(Dataset):
         try:
             video_tracks = self.load_video_tracks(video_name)
         except FileNotFoundError:
-            traceback.print_exc()
+            # traceback.print_exc()
             return None
         tracks_data = []
         for track_id, frames_ids in video_tracks["frames_ids"].items():
