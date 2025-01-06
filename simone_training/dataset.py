@@ -3,6 +3,7 @@ from torch.utils.data import Dataset
 import numpy as np
 import json
 from glob import glob
+import traceback
 
 
 def compute_timestamp_intersection(window, timespan, normalize=True):
@@ -169,6 +170,7 @@ class TrackDataset(Dataset):
         try:
             video_tracks = self.load_video_tracks(video_name)
         except FileNotFoundError:
+            traceback.print_exc()
             return None
         tracks_data = []
         for track_id, frames_ids in video_tracks["frames_ids"].items():
@@ -194,6 +196,7 @@ class TrackDataset(Dataset):
             )
         label = find_window_label(video_meta_data, [start_time, end_time])
         if len(tracks_data) == 0:
+            print("No track", video_name, start_time, video_tracks["frames_ids"])
             return {
                 "poses": torch.empty(0),
                 "hands_regions": torch.empty(0),
