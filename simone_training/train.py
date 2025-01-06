@@ -3,23 +3,29 @@ from torch.utils.data import DataLoader
 from torch.optim import Adam
 import os
 import sys
+from torch.utils.tensorboard import SummaryWriter
+from torch import nn
 
 sys.path.insert(0, os.path.dirname(__file__) + "/..")
 
 from simone_training.dataset import TrackDataset
 from simone_training.model import VideoClassifier
-from torch import nn
 
 # Hyperparameters
-nk = 58  # Number of keypoints, one every 120 in 3d poses
+nk = 58  # Number of keypoints
 keypoint_hidden_dim = 128
 hand_feature_dim = 32
 final_hidden_dim = 128
 learning_rate = 1e-4
 batch_size = 8
-num_epochs = 20
+num_epochs = 200
+save_path = "checkpoints"
+os.makedirs(save_path, exist_ok=True)
 
-# Initialize dataset, dataloader, model, optimizer, and loss function
+# Initialize TensorBoard writer
+writer = SummaryWriter(log_dir="tensorboard_logs")
+
+# Initialize dataset, dataloaders, model, optimizer, and loss function
 train_dataset = TrackDataset(
     "simone_subset.json",
     7.0,
@@ -41,7 +47,6 @@ val_dataset = TrackDataset(
     hands_width=128,
     mode="val",
 )
-
 val_loader = DataLoader(
     val_dataset, batch_size=batch_size, shuffle=False, collate_fn=lambda x: x
 )
@@ -51,20 +56,21 @@ model = VideoClassifier(
     keypoint_hidden_dim=keypoint_hidden_dim,
     hand_feature_dim=hand_feature_dim,
     final_hidden_dim=final_hidden_dim,
-)
-model = model.cuda()
+).cuda()
 
 optimizer = Adam(model.parameters(), lr=learning_rate)
 criterion = nn.BCELoss()
+
 # Training loop
 for epoch in range(num_epochs):
+    # Training phase
     model.train()
     train_loss = 0
     for batch in train_loader:
         poses_list, hands_list, video_indices, labels = [], [], [], []
         video_idx = 0
         for data in batch:
-            if data is None:  # Skip videos with invalid metadata
+            if data is None:
                 continue
             num_tracks = data["poses"].size(0)
             if num_tracks > 0:
@@ -74,7 +80,6 @@ for epoch in range(num_epochs):
             labels.append(data["label"])
             video_idx += 1
 
-        # If no valid videos in batch, skip the batch
         if not poses_list:
             continue
 
@@ -84,15 +89,64 @@ for epoch in range(num_epochs):
         labels = torch.tensor(labels, dtype=torch.float32).cuda()
 
         optimizer.zero_grad()
-        outputs = model(poses_list, hands_list, video_indices, len(labels))
-        print(outputs, labels)
+        with torch.amp.autocast("cuda"):  # Mixed precision training
+            outputs = model(poses_list, hands_list, video_indices)
         loss = criterion(outputs, labels)
-        print(loss.item())
         loss.backward()
         optimizer.step()
 
         train_loss += loss.item()
 
+    avg_train_loss = train_loss / len(train_loader)
+    writer.add_scalar("Loss/Train", avg_train_loss, epoch + 1)
+    print(f"Epoch {epoch+1}/{num_epochs}, Train Loss: {avg_train_loss:.4f}")
+
+    # Validation phase
+    model.eval()
+    val_loss = 0
+    correct = 0
+    total = 0
+    with torch.no_grad():
+        for batch in val_loader:
+            poses_list, hands_list, video_indices, labels = [], [], [], []
+            video_idx = 0
+            for data in batch:
+                if data is None:
+                    continue
+                num_tracks = data["poses"].size(0)
+                if num_tracks > 0:
+                    poses_list.append(data["poses"].cuda())
+                    hands_list.append(data["hands_regions"].cuda())
+                    video_indices.extend([video_idx] * num_tracks)
+                labels.append(data["label"])
+                video_idx += 1
+
+            if not poses_list:
+                continue
+
+            poses_list = torch.cat(poses_list, dim=0)
+            hands_list = torch.cat(hands_list, dim=0)
+            video_indices = torch.tensor(video_indices, dtype=torch.long).cuda()
+            labels = torch.tensor(labels, dtype=torch.float32).cuda()
+            with torch.amp.autocast("cuda"):
+                outputs = model(poses_list, hands_list, video_indices)
+            loss = criterion(outputs, labels)
+            val_loss += loss.item()
+
+            predictions = (outputs > 0.5).float()
+            correct += (predictions == labels).sum().item()
+            total += labels.size(0)
+
+    avg_val_loss = val_loss / len(val_loader)
+    val_accuracy = correct / total if total > 0 else 0
+    writer.add_scalar("Loss/Validation", avg_val_loss, epoch + 1)
+    writer.add_scalar("Accuracy/Validation", val_accuracy, epoch + 1)
     print(
-        f"Epoch {epoch+1}/{num_epochs}, Train Loss: {train_loss / len(train_loader):.4f}"
+        f"Epoch {epoch+1}/{num_epochs}, Val Loss: {avg_val_loss:.4f}, Val Accuracy: {val_accuracy:.4f}"
     )
+
+    # Save checkpoint
+    torch.save(model.state_dict(), f"{save_path}/model_epoch_{epoch+1}.pth")
+
+# Close TensorBoard writer
+writer.close()
