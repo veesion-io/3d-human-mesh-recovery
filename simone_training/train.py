@@ -64,6 +64,7 @@ for epoch in range(num_epochs):
     # Training phase
     model.train()
     train_loss = 0
+    num_samples_seen = 0
     for batch in train_loader:
         poses_list, hands_list, video_indices, labels = [], [], [], []
         video_idx = 0
@@ -94,8 +95,9 @@ for epoch in range(num_epochs):
         optimizer.step()
 
         train_loss += loss.item()
+        num_samples_seen += len(labels)
 
-    avg_train_loss = train_loss / len(train_loader)
+    avg_train_loss = train_loss / train_loss
     writer.add_scalar("Loss/Train", avg_train_loss, epoch + 1)
     print(f"Epoch {epoch+1}/{num_epochs}, Train Loss: {avg_train_loss:.4f}")
 
@@ -135,7 +137,7 @@ for epoch in range(num_epochs):
             correct += (predictions == labels).sum().item()
             total += labels.size(0)
 
-    avg_val_loss = val_loss / len(val_loader)
+    avg_val_loss = val_loss / total
     val_accuracy = correct / total if total > 0 else 0
     writer.add_scalar("Loss/Validation", avg_val_loss, epoch + 1)
     writer.add_scalar("Accuracy/Validation", val_accuracy, epoch + 1)
