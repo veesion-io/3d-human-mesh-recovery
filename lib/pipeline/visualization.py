@@ -40,7 +40,7 @@ def export_tram(
     img_focal = pred_cam["img_focal"].item()
     pred_cam_R = torch.tensor(pred_cam["pred_cam_R"])
     pred_cam_T = torch.tensor(pred_cam["pred_cam_T"])
-    tracks_frames_ids = []
+    tracks_frames_ids = {}
     for i in range(max_track):
         hps_file = hps_files[i]
 
@@ -49,7 +49,7 @@ def export_tram(
         pred_shape = pred_smpl["pred_shape"]
         pred_trans = pred_smpl["pred_trans"]
         frame = pred_smpl["frame"]
-        tracks_frames_ids.append(frame)
+        tracks_frames_ids[i] = frame
 
         mean_shape = pred_shape.mean(dim=0, keepdim=True)
         pred_shape = mean_shape.repeat(len(pred_shape), 1)
@@ -130,7 +130,7 @@ def export_tram(
         max_faces_per_bin=max_faces_per_bin,
     )
     renderer.set_ground(scale, cx.item(), cz.item())
-    tracks_hands = {}
+    tracks_hands, tracks_vertices = {}, {}
     for i in tqdm(range(len(imgfiles))):
         verts_list = track_verts[i]
         verts_colors = []
@@ -155,8 +155,14 @@ def export_tram(
                     hands, heights, track_tid[i]
                 )
             }
+            tracks_vertices[i] = {
+                track_id: vertices[:, ::120]
+                for vertices, track_id in zip(
+                    verts_list.data.cpu().numpy(), track_tid[i]
+                )
+            }
     formatted_tracks = {
-        "vertices": verts_list[:, ::120],
+        "vertices": tracks_vertices,
         "frames_ids": tracks_frames_ids,
         "hands": tracks_hands,
     }
