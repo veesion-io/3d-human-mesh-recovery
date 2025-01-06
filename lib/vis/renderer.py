@@ -383,7 +383,7 @@ class Renderer:
             fov = 2 * degrees(atan(1.0 / (2 * focal_length)))  # FOV in degrees
             camera_transform = cameras.get_world_to_view_transform()
             view_space_coords = camera_transform.transform_points(
-                hands_points[0]
+                hands_points[0][None, :]
             )  # Add batch dim
             z_coordinate = view_space_coords[0, 2]  # Extract z (depth)
 
