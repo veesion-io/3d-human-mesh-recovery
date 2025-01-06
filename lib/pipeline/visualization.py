@@ -343,7 +343,7 @@ def visualize_tram(
                 # cv2.rectangle(img, top_left, bottom_right, color, thickness)
         # out = np.concatenate([img, rend], axis=1)
         writer.append_data(rend)
-        if i == 11:
-            cv2.imwrite(rend, "hey.png")
+        if i == 10:
+            cv2.imwrite("hey.png", rend)
 
     writer.close()
