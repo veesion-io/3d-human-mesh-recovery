@@ -100,6 +100,7 @@ for epoch in range(num_epochs):
         predictions = (outputs > 0.0).float()
         correct += (predictions == labels).sum().item()
         total += labels.size(0)
+        print(loss.item(), outputs, labels, video_indices)
 
     avg_train_loss = train_loss / train_loss
     train_accuracy = correct / total if total > 0 else 0
