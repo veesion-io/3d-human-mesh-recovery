@@ -95,7 +95,7 @@ class TrackDataset(Dataset):
     ):
         video_barename = os.path.splitext(video_name)[0]
         tracks_info = np.load(
-            os.path.join(self.tracks_path, f"{video_barename}.npy", allow_pickle=True)
+            os.path.join(self.tracks_path, f"{video_barename}.npy"), allow_pickle=True
         ).item()
         return tracks_info
         # formatted_tracks = {track_id : {"frames_ids": frames_ids} for track_id, frames_ids in tracks_frames_ids.items()}
