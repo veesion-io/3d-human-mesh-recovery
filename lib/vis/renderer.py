@@ -356,12 +356,6 @@ class Renderer:
             T=torch.zeros(1, 3, device=cameras.device),  # Zero translation
             device=cameras.device,
         )
-        # Correct transformed vertices for the principal point shift
-        principal_point = cameras.principal_point[0]
-        for verts in verts_:
-            verts[..., 0] += principal_point[0]  # Adjust X for principal point
-            verts[..., 1] += principal_point[1]  # Adjust Y for principal point
-
         if len(verts_):
             mesh = create_meshes(verts_, faces_, colors_)
             materials = Materials(device=self.device, shininess=0)
