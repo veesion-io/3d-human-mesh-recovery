@@ -4,6 +4,7 @@ import numpy as np
 import json
 from glob import glob
 import traceback
+from functools import lru_cache
 
 
 def compute_timestamp_intersection(window, timespan, normalize=True):
@@ -118,6 +119,10 @@ class TrackDataset(Dataset):
             ),
         }
 
+    @lru_cache(maxsize=2)
+    def load_frame(self, frame_path):
+        return cv2.imread(frame_path)
+
     def load_hands_regions(
         self, track_id, video_name, video_tracks, cropped_track_info
     ):
@@ -129,7 +134,7 @@ class TrackDataset(Dataset):
         track_hands = []
         for frame_id in cropped_track_info["frames_ids"]:
             img = np.ascontiguousarray(
-                cv2.imread(imgfiles[frame_id])[:, :, ::-1], dtype=np.uint8
+                self.load_frame(imgfiles[frame_id])[:, :, ::-1], dtype=np.uint8
             )
             person_hands, height = video_tracks["hands"][frame_id][track_id]
             frame_hands_regions = []
