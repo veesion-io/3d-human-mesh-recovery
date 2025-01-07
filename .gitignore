@@ -33,7 +33,9 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
-
+vizs
+*.json
+*.zip
 # Jupyter Notebook
 .ipynb_checkpoints
 *.ipynb
