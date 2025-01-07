@@ -29,6 +29,10 @@ save_path = "checkpoints"
 os.makedirs(save_path, exist_ok=True)
 
 
+def collate_fn(batch):
+    return batch
+
+
 def main():
     # Initialize TensorBoard writer
     writer = SummaryWriter(log_dir="tensorboard_logs")
@@ -46,7 +50,7 @@ def main():
         train_dataset,
         batch_size=batch_size,
         shuffle=True,
-        collate_fn=lambda x: x,
+        collate_fn=collate_fn,
         num_workers=16,
     )
     val_dataset = TrackDataset(
@@ -61,7 +65,7 @@ def main():
         val_dataset,
         batch_size=batch_size,
         shuffle=False,
-        collate_fn=lambda x: x,
+        collate_fn=collate_fn,
         num_workers=16,
     )
 
