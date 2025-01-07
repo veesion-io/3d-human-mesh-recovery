@@ -81,12 +81,12 @@ class HandImageEncoder(nn.Module):
         # self.feature_extractor = torchvision.models.efficientnet_b0(
         #     weights="IMAGENET1K_V1"
         # )
-        self.feature_extractor = convnext_tiny(
-            weights=ConvNeXt_Tiny_Weights.IMAGENET1K_V1
-        )
-        # self.feature_extractor = torch.hub.load(
-        #     "pytorch/vision:v0.10.0", pretrained_model_name, pretrained=True
+        # self.feature_extractor = convnext_tiny(
+        #     weights=ConvNeXt_Tiny_Weights.IMAGENET1K_V1
         # )
+        self.feature_extractor = torch.hub.load(
+            "pytorch/vision:v0.10.0", pretrained_model_name, pretrained=True
+        )
         self.feature_extractor.fc = nn.Identity()  # Remove classification layer
         self.fc = nn.Linear(
             512, output_dim
