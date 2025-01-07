@@ -158,7 +158,7 @@ class TrackDataset(Dataset):
             frames_ids[0] / video_fps,
             frames_ids[-1] / video_fps,
         ]
-        return compute_timestamp_intersection(window, track_timespan) > 0.2
+        return compute_timestamp_intersection(window, track_timespan) > 0.4
 
     def __getitem__(self, index):
         video_name = self.videos_names[index]
