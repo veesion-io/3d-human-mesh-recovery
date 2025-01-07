@@ -67,6 +67,7 @@ class TrackDataset(Dataset):
         hands_height=128,
         hands_width=128,
         mode="train",
+        max_num_tracks=3,
     ):
         super(TrackDataset, self).__init__()
         with open(meta_data_file, "r") as f:
@@ -85,6 +86,7 @@ class TrackDataset(Dataset):
         self.target_fps = target_fps
         self.hands_height = hands_height
         self.hands_width = hands_width
+        self.max_num_tracks = max_num_tracks
 
     def __len__(self):
         return len(self.videos_meta_data)
@@ -158,14 +160,14 @@ class TrackDataset(Dataset):
             track_hands.append(frame_hands_regions)
         return track_hands
 
-    def track_in_window(self, video_fps, frames_ids, window):
+    def window_intersection(self, video_fps, frames_ids, window):
         track_timestamps = np.array(frames_ids) / video_fps
         intersecting_timestamps = track_timestamps[track_timestamps >= window[0]]
         intersecting_timestamps = intersecting_timestamps[
             intersecting_timestamps < window[1]
         ]
         intersecting_duration = len(intersecting_timestamps) / video_fps
-        return (intersecting_duration / (window[1] - window[0])) > 0.4
+        return intersecting_duration / (window[1] - window[0])
 
     def __getitem__(self, index):
         video_name = self.videos_names[index]
@@ -182,11 +184,15 @@ class TrackDataset(Dataset):
             # traceback.print_exc()
             return None
         tracks_data = []
+        tracks_intersections = {}
         for track_id, frames_ids in video_tracks["frames_ids"].items():
-            if not self.track_in_window(
+            tracks_intersections[track_id] =  self.window_intersection(
                 video_info["fps"], frames_ids, [start_time, end_time]
-            ):
-                continue
+            )
+        tracks_intersections = sorted(tracks_intersections.items(), key=lambda x:x[1])[::-1]
+        tracks_intersections = tracks_intersections[:self.max_num_tracks]
+        selected_tracks = [track_id for track_id, intersection in tracks_intersections if intersection > 0.4]
+        for track_id in selected_tracks
             cropped_track_info = self.crop_track(
                 track_id,
                 video_tracks,
