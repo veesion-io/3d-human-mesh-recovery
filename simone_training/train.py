@@ -24,6 +24,8 @@ final_hidden_dim = 128
 learning_rate = 1e-4
 target_fps = 3.0
 batch_size = 8
+hands_height = 64
+hands_width = 64
 num_epochs = 200
 save_path = "checkpoints"
 os.makedirs(save_path, exist_ok=True)
@@ -42,8 +44,8 @@ def main():
         "simone_subset.json",
         7.0,
         target_fps=target_fps,
-        hands_height=128,
-        hands_width=128,
+        hands_height=hands_height,
+        hands_width=hands_width,
         mode="train",
     )
     train_loader = DataLoader(
@@ -51,14 +53,14 @@ def main():
         batch_size=batch_size,
         shuffle=True,
         collate_fn=collate_fn,
-        num_workers=16,
+        num_workers=24,
     )
     val_dataset = TrackDataset(
         "simone_subset.json",
         7.0,
         target_fps=target_fps,
-        hands_height=128,
-        hands_width=128,
+        hands_height=hands_height,
+        hands_width=hands_width,
         mode="val",
     )
     val_loader = DataLoader(
@@ -66,7 +68,7 @@ def main():
         batch_size=batch_size,
         shuffle=False,
         collate_fn=collate_fn,
-        num_workers=16,
+        num_workers=24,
     )
 
     model = VideoClassifier(
