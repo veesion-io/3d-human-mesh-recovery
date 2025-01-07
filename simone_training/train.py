@@ -125,9 +125,9 @@ def main():
             iterations += 1
             print(
                 loss.item(),
-                outputs.data.cpu().numpy(),
-                labels.data.cpu().numpy(),
-                video_indices.data.cpu().numpy(),
+                list(outputs.data.cpu().numpy()),
+                list(labels.data.cpu().numpy()),
+                list(video_indices.data.cpu().numpy()),
             )
 
         avg_train_loss = train_loss / iterations
@@ -177,9 +177,9 @@ def main():
                 iterations += 1
             print(
                 loss.item(),
-                outputs.data.cpu().numpy(),
-                labels.data.cpu().numpy(),
-                video_indices.data.cpu().numpy(),
+                list(outputs.data.cpu().numpy()),
+                list(labels.data.cpu().numpy()),
+                list(video_indices.data.cpu().numpy()),
             )
 
         avg_val_loss = val_loss / iterations

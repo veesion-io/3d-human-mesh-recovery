@@ -6,6 +6,7 @@ import torch.nn.functional as F
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import TransformerEncoder, TransformerEncoderLayer
+from torchvision.models import convnext_tiny, ConvNeXt_Tiny_Weights
 
 
 class Keypoint3DTrajectoryEncoder(nn.Module):
@@ -32,7 +33,7 @@ class Keypoint3DTrajectoryEncoder(nn.Module):
         encoder_layer = TransformerEncoderLayer(
             d_model=hidden_dim * 2, nhead=8, dim_feedforward=256
         )
-        self.transformer_encoder = TransformerEncoder(encoder_layer, num_layers=2)
+        self.transformer_encoder = TransformerEncoder(encoder_layer, num_layers=3)
 
         self.positional_encoding = nn.Parameter(
             torch.randn(1, 512, hidden_dim * 2)  # Match GRU output size (bidirectional)
@@ -80,9 +81,12 @@ class HandImageEncoder(nn.Module):
         # self.feature_extractor = torchvision.models.efficientnet_b0(
         #     weights="IMAGENET1K_V1"
         # )
-        self.feature_extractor = torch.hub.load(
-            "pytorch/vision:v0.10.0", pretrained_model_name, pretrained=True
+        self.feature_extractor = convnext_tiny(
+            weights=ConvNeXt_Tiny_Weights.IMAGENET1K_V1
         )
+        # self.feature_extractor = torch.hub.load(
+        #     "pytorch/vision:v0.10.0", pretrained_model_name, pretrained=True
+        # )
         self.feature_extractor.fc = nn.Identity()  # Remove classification layer
         self.fc = nn.Linear(
             512, output_dim
