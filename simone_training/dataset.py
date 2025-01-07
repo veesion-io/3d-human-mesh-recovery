@@ -186,13 +186,19 @@ class TrackDataset(Dataset):
         tracks_data = []
         tracks_intersections = {}
         for track_id, frames_ids in video_tracks["frames_ids"].items():
-            tracks_intersections[track_id] =  self.window_intersection(
+            tracks_intersections[track_id] = self.window_intersection(
                 video_info["fps"], frames_ids, [start_time, end_time]
             )
-        tracks_intersections = sorted(tracks_intersections.items(), key=lambda x:x[1])[::-1]
-        tracks_intersections = tracks_intersections[:self.max_num_tracks]
-        selected_tracks = [track_id for track_id, intersection in tracks_intersections if intersection > 0.4]
-        for track_id in selected_tracks
+        tracks_intersections = sorted(tracks_intersections.items(), key=lambda x: x[1])[
+            ::-1
+        ]
+        tracks_intersections = tracks_intersections[: self.max_num_tracks]
+        selected_tracks = [
+            track_id
+            for track_id, intersection in tracks_intersections
+            if intersection > 0.4
+        ]
+        for track_id in selected_tracks:
             cropped_track_info = self.crop_track(
                 track_id,
                 video_tracks,
