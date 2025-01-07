@@ -103,7 +103,7 @@ for epoch in range(num_epochs):
         total += labels.size(0)
         print(loss.item(), outputs, labels, video_indices)
 
-    avg_train_loss = train_loss / train_loss
+    avg_train_loss = train_loss / total
     train_accuracy = correct / total if total > 0 else 0
     writer.add_scalar("Loss/Train", avg_train_loss, epoch + 1)
     writer.add_scalar("Accuracy/Train", train_accuracy, epoch + 1)
