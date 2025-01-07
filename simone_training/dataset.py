@@ -154,11 +154,13 @@ class TrackDataset(Dataset):
         return track_hands
 
     def track_in_window(self, video_fps, frames_ids, window):
-        track_timespan = [
-            frames_ids[0] / video_fps,
-            frames_ids[-1] / video_fps,
+        track_timestamps = np.array(frames_ids) / video_fps
+        intersecting_timestamps = track_timestamps[track_timestamps >= window[0]]
+        intersecting_timestamps = intersecting_timestamps[
+            intersecting_timestamps < window[1]
         ]
-        return compute_timestamp_intersection(window, track_timespan) > 0.4
+        intersecting_duration = len(intersecting_timestamps) / video_fps
+        return (intersecting_duration / (window[1] - window[0])) > 0.4
 
     def __getitem__(self, index):
         video_name = self.videos_names[index]

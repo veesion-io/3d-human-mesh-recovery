@@ -67,7 +67,7 @@ for epoch in range(num_epochs):
     train_loss = 0
     correct = 0
     total = 0
-
+    iterations = 0
     for batch in train_loader:
         poses_list, hands_list, video_indices, labels = [], [], [], []
         video_idx = 0
@@ -101,9 +101,10 @@ for epoch in range(num_epochs):
         predictions = (outputs > 0.0).float()
         correct += (predictions == labels).sum().item()
         total += labels.size(0)
+        iterations += 1
         print(loss.item(), outputs, labels, video_indices)
 
-    avg_train_loss = train_loss / total
+    avg_train_loss = train_loss / iterations
     train_accuracy = correct / total if total > 0 else 0
     writer.add_scalar("Loss/Train", avg_train_loss, epoch + 1)
     writer.add_scalar("Accuracy/Train", train_accuracy, epoch + 1)
@@ -116,6 +117,7 @@ for epoch in range(num_epochs):
     val_loss = 0
     correct = 0
     total = 0
+    iterations = 0
     with torch.no_grad():
         for batch in val_loader:
             poses_list, hands_list, video_indices, labels = [], [], [], []
@@ -146,8 +148,10 @@ for epoch in range(num_epochs):
             predictions = (outputs > 0.0).float()
             correct += (predictions == labels).sum().item()
             total += labels.size(0)
+            iterations += 1
+            print(loss.item(), outputs, labels, video_indices)
 
-    avg_val_loss = val_loss / total
+    avg_val_loss = val_loss / iterations
     val_accuracy = correct / total if total > 0 else 0
     writer.add_scalar("Loss/Validation", avg_val_loss, epoch + 1)
     writer.add_scalar("Accuracy/Validation", val_accuracy, epoch + 1)
