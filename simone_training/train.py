@@ -18,9 +18,9 @@ from simone_training.model import VideoClassifier
 
 # Hyperparameters
 nk = 58  # Number of keypoints
-keypoint_hidden_dim = 128
-hand_feature_dim = 32
-final_hidden_dim = 128
+keypoint_hidden_dim = 4
+hand_feature_dim = 4
+final_hidden_dim = 8
 learning_rate = 1e-4
 target_fps = 3.0
 batch_size = 8
