@@ -141,7 +141,7 @@ def main():
             print(
                 loss.item(),
                 list(outputs.data.cpu().numpy()),
-                list(labels.data.cpu().numpy()),
+                list(labels.data.cpu().numpy().astype(int)),
                 list(video_indices.data.cpu().numpy()),
             )
 
@@ -193,7 +193,7 @@ def main():
                 print(
                     loss.item(),
                     list(outputs.data.cpu().numpy()),
-                    list(labels.data.cpu().numpy()),
+                    list(labels.data.cpu().numpy().astype(int)),
                     list(video_indices.data.cpu().numpy()),
                 )
 
