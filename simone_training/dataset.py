@@ -87,6 +87,7 @@ class TrackDataset(Dataset):
         self.hands_height = hands_height
         self.hands_width = hands_width
         self.max_num_tracks = max_num_tracks
+        self.mode = mode
 
     def __len__(self):
         return len(self.videos_meta_data)
