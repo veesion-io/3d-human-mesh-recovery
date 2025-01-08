@@ -284,7 +284,6 @@ def random_horizontal_rotation_3d(vertices, max_angle_degrees=180):
 
     # Generate a random angle in the range [-max_angle, max_angle]
     angle = torch.empty(1).uniform_(-max_angle_radians, max_angle_radians)
-    print(angle)
     # Compute the rotation matrix for Y-axis
     rotation_matrix = torch.tensor(
         [
