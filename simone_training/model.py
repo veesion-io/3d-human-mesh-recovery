@@ -89,7 +89,7 @@ class HandImageEncoder(nn.Module):
         # )
         self.feature_extractor.fc = nn.Identity()  # Remove classification layer
         self.fc = nn.Linear(
-            512, output_dim
+            1000, output_dim
         )  # Adjust input size based on the pretrained model
 
     def forward(self, hand_images):
