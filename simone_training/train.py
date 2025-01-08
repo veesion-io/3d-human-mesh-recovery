@@ -190,12 +190,12 @@ def main():
                 correct += (predictions == labels).sum().item()
                 total += labels.size(0)
                 iterations += 1
-            print(
-                loss.item(),
-                list(outputs.data.cpu().numpy()),
-                list(labels.data.cpu().numpy()),
-                list(video_indices.data.cpu().numpy()),
-            )
+                print(
+                    loss.item(),
+                    list(outputs.data.cpu().numpy()),
+                    list(labels.data.cpu().numpy()),
+                    list(video_indices.data.cpu().numpy()),
+                )
 
         avg_val_loss = val_loss / iterations
         val_accuracy = correct / total if total > 0 else 0
