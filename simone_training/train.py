@@ -40,7 +40,7 @@ import time
 
 def main():
     # Initialize TensorBoard writer
-    run_name = "run_" + str(time.time()).split(".")
+    run_name = "run_" + str(time.time()).split(".")[0]
     writer = SummaryWriter(log_dir=f"tensorboard_logs/{run_name}")
 
     # Initialize dataset, dataloaders, model, optimizer, and loss function
