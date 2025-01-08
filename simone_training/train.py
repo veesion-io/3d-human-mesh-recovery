@@ -18,14 +18,14 @@ from simone_training.model import VideoClassifier
 
 # Hyperparameters
 nk = 58  # Number of keypoints
-keypoint_hidden_dim = 4
-hand_feature_dim = 4
-final_hidden_dim = 8
+keypoint_hidden_dim = 8
+hand_feature_dim = 8
+final_hidden_dim = 16
 learning_rate = 1e-4
 target_fps = 3.0
 batch_size = 8
-hands_height = 64
-hands_width = 64
+hands_height = 128
+hands_width = 128
 num_epochs = 200
 save_path = "checkpoints"
 os.makedirs(save_path, exist_ok=True)
