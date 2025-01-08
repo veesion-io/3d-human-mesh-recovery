@@ -83,10 +83,10 @@ def main():
     ).cuda()
     # Freeze 90% of the layers
     freeze_ratio = 0.85
-    num_layers = len(list(model.feature_extractor.features.children()))
+    num_layers = len(list(model.hand_encoder.feature_extractor.features.children()))
     freeze_up_to = int(freeze_ratio * num_layers)
 
-    for i, layer in enumerate(model.feature_extractor.features.children()):
+    for i, layer in enumerate(model.hand_encoder.feature_extractor.features.children()):
         if i < freeze_up_to:
             for param in layer.parameters():
                 param.requires_grad = False
