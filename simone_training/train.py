@@ -85,6 +85,7 @@ def main():
     freeze_ratio = 0.85
     num_layers = len(list(model.hand_encoder.feature_extractor.features.children()))
     freeze_up_to = int(freeze_ratio * num_layers)
+    print(f"Freezing {freeze_up_to}/{num_layers} of hand encoder layers")
 
     for i, layer in enumerate(model.hand_encoder.feature_extractor.features.children()):
         if i < freeze_up_to:
