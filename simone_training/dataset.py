@@ -234,6 +234,23 @@ class TrackDataset(Dataset):
             "hands_regions": torch.stack([x[1] for x in tracks_data]),
             "label": label,
         }
+        if self.mode == "train":
+            for track_num in range(len(formatted_data["hands_regions"])):
+                if np.random.choice(2):
+                    formatted_data["hands_regions"][track_num] = torch.flip(
+                        formatted_data["hands_regions"][track_num], (3,)
+                    )
+                formatted_data["poses"][track_num] = random_horizontal_rotation_3d(
+                    formatted_data["poses"][track_num]
+                )
+                if np.random.choice(2):
+                    formatted_data["poses"][track_num] = random_horizontal_flip_3d(
+                        formatted_data["poses"][track_num], axis=0
+                    )
+                if np.random.choice(2):
+                    formatted_data["poses"][track_num] = random_horizontal_flip_3d(
+                        formatted_data["poses"][track_num], axis=2
+                    )
         # os.makedirs("inputs", exist_ok=True)
         # np.save(
         #     f"inputs/{os.path.splitext(video_name)[0]}_{start_time}.npy", formatted_data
@@ -245,6 +262,74 @@ class TrackDataset(Dataset):
 
 
 import av
+
+import torch
+
+
+def random_horizontal_rotation_3d(vertices, max_angle_degrees=180):
+    """
+    Apply a random rotation to 3D vertices for each frame along the horizontal axis (Y-axis).
+
+    Args:
+        vertices (torch.Tensor): A tensor of shape (T, nk, 3), where T is the number of frames,
+                                 nk is the number of keypoints, and 3 represents (x, y, z).
+        max_angle_degrees (float): The maximum angle for rotation in degrees.
+
+    Returns:
+        torch.Tensor: Rotated vertices with the same shape as input.
+    """
+    # Convert max_angle to radians
+    max_angle_radians = torch.deg2rad(torch.tensor(max_angle_degrees))
+
+    # Generate a random angle in the range [-max_angle, max_angle]
+    angle = torch.empty(1).uniform_(-max_angle_radians, max_angle_radians)
+    print(angle)
+    # Compute the rotation matrix for Y-axis
+    rotation_matrix = torch.tensor(
+        [
+            [torch.cos(angle).item(), 0, torch.sin(angle).item()],
+            [0, 1, 0],
+            [-torch.sin(angle).item(), 0, torch.cos(angle).item()],
+        ],
+        dtype=vertices.dtype,
+        device=vertices.device,
+    )
+
+    # Reshape vertices to (T * nk, 3), apply rotation, and reshape back to (T, nk, 3)
+    T, nk, _ = vertices.shape
+    vertices_flat = vertices.view(-1, 3)  # (T * nk, 3)
+    rotated_vertices_flat = torch.matmul(vertices_flat, rotation_matrix.T)
+    rotated_vertices = rotated_vertices_flat.view(T, nk, 3)
+
+    return rotated_vertices
+
+
+def random_horizontal_flip_3d(vertices, axis):
+    """
+    Apply a random horizontal flip to 3D vertices for each frame.
+    The flip mirrors the vertices across the Y-axis without centering.
+
+    Args:
+        vertices (torch.Tensor): A tensor of shape (T, nk, 3), where T is the number of frames,
+                                 nk is the number of keypoints, and 3 represents (x, y, z).
+        flip_prob (float): Probability of applying the flip (default: 0.5).
+
+    Returns:
+        torch.Tensor: Flipped vertices with the same shape as input.
+    """
+    # Compute the bounding box for the X and Z dimensions
+    x_min, _ = torch.min(
+        vertices[..., axis], dim=1, keepdim=True
+    )  # Min across keypoints (nk)
+    x_max, _ = torch.max(vertices[..., axis], dim=1, keepdim=True)
+
+    # Flip X and Z coordinates around their respective midpoints
+    x_mid = (x_max + x_min) / 2
+
+    flipped_vertices = vertices.clone()
+    flipped_vertices[..., axis] = 2 * x_mid - vertices[..., axis]  # Flip X
+
+    return flipped_vertices
 
 
 def read_video_info(video_path: str):

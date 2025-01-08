@@ -77,8 +77,18 @@ def main():
         hand_feature_dim=hand_feature_dim,
         final_hidden_dim=final_hidden_dim,
     ).cuda()
+    # Freeze 90% of the layers
+    freeze_ratio = 0.85
+    num_layers = len(list(model.feature_extractor.features.children()))
+    freeze_up_to = int(freeze_ratio * num_layers)
 
-    optimizer = Adam(model.parameters(), lr=learning_rate)
+    for i, layer in enumerate(model.feature_extractor.features.children()):
+        if i < freeze_up_to:
+            for param in layer.parameters():
+                param.requires_grad = False
+
+    optimizer = Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=1e-4)
+
     criterion = nn.BCEWithLogitsLoss()
 
     # Training loop
