@@ -252,6 +252,25 @@ class TrackDataset(Dataset):
                     formatted_data["poses"][track_num] = random_horizontal_flip_3d(
                         formatted_data["poses"][track_num], axis=2
                     )
+        formatted_data["hands_regions"][:, :, :, :, :, 0] = (
+            formatted_data["hands_regions"][:, :, :, :, :, 0]
+            .div(255.0)
+            .sub(0.485)
+            .div(0.229)
+        )
+        formatted_data["hands_regions"][:, :, :, :, :, 1] = (
+            formatted_data["hands_regions"][:, :, :, :, :, 1]
+            .div(255.0)
+            .sub(0.456)
+            .div(0.224)
+        )
+        formatted_data["hands_regions"][:, :, :, :, :, 2] = (
+            formatted_data["hands_regions"][:, :, :, :, :, 2]
+            .div(255.0)
+            .sub(0.406)
+            .div(0.225)
+        )
+
         # os.makedirs("inputs", exist_ok=True)
         # np.save(
         #     f"inputs/{os.path.splitext(video_name)[0]}_{start_time}.npy", formatted_data
