@@ -35,9 +35,13 @@ def collate_fn(batch):
     return batch
 
 
+import time
+
+
 def main():
     # Initialize TensorBoard writer
-    writer = SummaryWriter(log_dir="tensorboard_logs")
+    run_name = "run_" + str(time.time()).split(".")
+    writer = SummaryWriter(log_dir=f"tensorboard_logs/{run_name}")
 
     # Initialize dataset, dataloaders, model, optimizer, and loss function
     train_dataset = TrackDataset(
