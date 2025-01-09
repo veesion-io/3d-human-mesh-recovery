@@ -67,7 +67,7 @@ class TrackDataset(Dataset):
         hands_height=128,
         hands_width=128,
         mode="train",
-        max_num_tracks=3,
+        max_num_tracks=2,
     ):
         super(TrackDataset, self).__init__()
         with open(meta_data_file, "r") as f:
