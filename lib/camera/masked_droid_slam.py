@@ -60,6 +60,7 @@ def run_metric_slam(img_folder, masks=None, calib=None, is_static=False, seq_fol
     import os
 
     os.makedirs(os.path.join(seq_folder, "depths"), exist_ok=True)
+    print("tstamp", tstamp)
     H, W = get_dimention(img_folder)
     for t in tqdm(tstamp):
         img = cv2.imread(imgfiles[t])[:, :, ::-1]
@@ -67,7 +68,7 @@ def run_metric_slam(img_folder, masks=None, calib=None, is_static=False, seq_fol
 
         img_pil = Image.fromarray(img)
         pred_depth = model_zoe_n.infer_pil(img_pil)
-        cv2.imwrite(os.path.join(seq_folder, "depths", f"img_{t}.png"))
+        cv2.imwrite(os.path.join(seq_folder, "depths", f"img_{t}.png"), pred_depth)
         pred_depths.append(pred_depth)
 
     ##### Estimate Metric Scale #####
