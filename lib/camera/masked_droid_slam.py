@@ -57,6 +57,9 @@ def run_metric_slam(img_folder, masks=None, calib=None, is_static=False):
     model_zoe_n = model_zoe_n.to("cuda")
 
     pred_depths = []
+    import os
+
+    os.makedirs(os.path.join(img_folder, "depths"), exist_ok=True)
     H, W = get_dimention(img_folder)
     for t in tqdm(tstamp):
         img = cv2.imread(imgfiles[t])[:, :, ::-1]
@@ -64,6 +67,7 @@ def run_metric_slam(img_folder, masks=None, calib=None, is_static=False):
 
         img_pil = Image.fromarray(img)
         pred_depth = model_zoe_n.infer_pil(img_pil)
+        cv2.imwrite(os.path.join(img_folder, "depths", f"img_{t}.png"))
         pred_depths.append(pred_depth)
 
     ##### Estimate Metric Scale #####
