@@ -57,7 +57,7 @@ cam_int, is_static = calibrate_intrinsics(
     img_folder, masks, is_static=args.static_camera
 )
 cam_R, cam_T = run_metric_slam(
-    img_folder, masks=masks, calib=cam_int, is_static=is_static
+    img_folder, masks=masks, calib=cam_int, is_static=is_static, seq_folder=seq_folder
 )
 
 camera = {
