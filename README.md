@@ -16,12 +16,17 @@ git clone --recursive https://github.com/yufu-wang/tram
 ```
 2. Creating a new anaconda environment.
 ```Bash
+git clone --recursive https://github.com/yufu-wang/tram
 conda create -n tram python=3.10 -y
 conda activate tram
 bash install.sh
 ```
 3. Compile DROID-SLAM. If you encountered difficulty in this step, please refer to its [official release](https://github.com/princeton-vl/DROID-SLAM) for more info. In this project, DROID is modified to support masking. 
 ```Bash
+git clone --recursive https://github.com/yufu-wang/tram
+conda create -n tram python=3.10 -y
+conda activate tram
+bash install.sh
 cd thirdparty/DROID-SLAM
 python setup.py install
 cd ../..
@@ -32,6 +37,14 @@ Register at [SMPLify](https://smplify.is.tue.mpg.de) and [SMPL](https://smpl.is.
 
 Run the following to fetch all models and checkpoints to `data/`
 ```Bash
+git clone --recursive https://github.com/yufu-wang/tram
+conda create -n tram python=3.10 -y
+conda activate tram
+bash install.sh
+cd thirdparty/DROID-SLAM
+python setup.py install
+cd ../..
+# TODO
 bash scripts/download_models.sh
 ```
 
@@ -39,6 +52,8 @@ bash scripts/download_models.sh
 This project integrates the complete 4D human system, including tracking, slam, and 4D human capture in the world space. We separate the core functionalities into different scripts, which should be run **sequentially**. Each step will save its result to be used by the next step. All results will be saved in a folder with the same name as the video.
 
 ```bash
+# TODO
+bash scripts/download_models.sh
 # 1. Run Masked Droid SLAM (also detect+track humans in this step)
 python scripts/estimate_camera.py --video "./example_video.mov" 
 # -- You can indicate if the camera is static. The algorithm will try to catch it as well.
