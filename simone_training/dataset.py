@@ -245,7 +245,7 @@ class TrackDataset(Dataset):
             bags_presences = self.load_bag_presence(
                 track_id, video_name, video_tracks, cropped_track_info
             )
-            print("bags_presences", bags_presences)
+            print("bag_features", bags_presences)
 
             tracks_data.append(
                 (
@@ -264,16 +264,16 @@ class TrackDataset(Dataset):
             # )
             return {
                 "poses": torch.empty(0),
-                "bags_presences": torch.empty(0),
+                "bag_features": torch.empty(0),
                 "label": label,
             }
         formatted_data = {
             "poses": torch.stack([x[0] for x in tracks_data]),
-            "bags_presences": torch.stack([x[1] for x in tracks_data]),
+            "bag_features": torch.stack([x[1] for x in tracks_data]),
             "label": label,
         }
         if self.mode == "train":
-            for track_num in range(len(formatted_data["bags_presences"])):
+            for track_num in range(len(formatted_data["bag_features"])):
                 formatted_data["poses"][track_num] = random_horizontal_rotation_3d(
                     formatted_data["poses"][track_num]
                 )
@@ -290,7 +290,7 @@ class TrackDataset(Dataset):
         # np.save(
         #     f"inputs/{os.path.splitext(video_name)[0]}_{start_time}.npy", formatted_data
         # )
-        # np.save("hands.npy", formatted_data["bags_presences"].numpy())
+        # np.save("hands.npy", formatted_data["bag_features"].numpy())
         # print(video_name, start_time)
         # dvsdv
         return formatted_data
