@@ -7,6 +7,9 @@ from torch.utils.data import DataLoader
 from torch.optim import Adam
 from torch.utils.tensorboard import SummaryWriter
 from torch import nn
+
+sys.path.insert(0, os.path.dirname(__file__) + "/..")
+
 from simone_training.dataset import TrackDataset
 from simone_training.model import VideoClassifier
 
