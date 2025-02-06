@@ -184,7 +184,6 @@ class TrackDataset(Dataset):
                 hand_box = [x1, y1, x2, y2]
 
                 for bag_box, bag_cls in zip(bag_boxes, bag_classes):
-                    print("bag", bag_box, bag_cls, hand_box)
                     if (
                         compute_intersection_ratio(hand_box, bag_box)
                         >= intersection_threshold
@@ -234,7 +233,6 @@ class TrackDataset(Dataset):
             for track_id, intersection in tracks_intersections
             if intersection > 0.4
         ]
-        print("selected_tracks", selected_tracks)
         for track_id in selected_tracks:
             cropped_track_info = self.crop_track(
                 track_id,
@@ -246,7 +244,6 @@ class TrackDataset(Dataset):
             bags_presences = self.load_bag_presence(
                 track_id, video_name, video_tracks, cropped_track_info
             )
-            print("bag_features", bags_presences)
 
             tracks_data.append(
                 (

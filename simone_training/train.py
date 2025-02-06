@@ -119,6 +119,12 @@ def main():
             correct += (predictions == labels).sum().item()
             total += labels.size(0)
             iterations += 1
+            print(
+                loss.item(),
+                list(outputs.data.cpu().numpy()),
+                list(labels.data.cpu().numpy().astype(int)),
+                list(video_indices.data.cpu().numpy()),
+            )
 
         avg_train_loss = train_loss / iterations
         train_accuracy = correct / total if total > 0 else 0
