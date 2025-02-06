@@ -4,7 +4,6 @@ import numpy as np
 import json
 from functools import lru_cache
 import pickle
-import numpy as np
 import os
 import cv2
 
@@ -51,9 +50,6 @@ def find_window_label(video_meta_data, window):
     )
 
 
-import os
-
-
 def find_closest(sorted_list1, sorted_list2):
     sorted_list1 = np.array(sorted_list1)
     sorted_list2 = np.array(sorted_list2)
@@ -63,9 +59,6 @@ def find_closest(sorted_list1, sorted_list2):
 
     # Use the indices to get the closest values from sorted_list2
     return sorted_list2[indices]
-
-
-import cv2
 
 
 class TrackDataset(Dataset):
