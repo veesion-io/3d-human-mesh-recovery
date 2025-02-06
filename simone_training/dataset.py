@@ -160,6 +160,7 @@ class TrackDataset(Dataset):
             person_hands, height = video_tracks["hands"][frame_id][track_id]
             bag_boxes = bag_detections[frame_id]["boxes"]
             bag_classes = bag_detections[frame_id]["classes"]
+            bag_confs = bag_detections[frame_id]["confs"]
 
             bag_vectors = []
             for x, y in person_hands:
@@ -170,12 +171,16 @@ class TrackDataset(Dataset):
                 x2, y2 = (int(x + 1.75 * dx), int(y + dy))
                 hand_box = [x1, y1, x2, y2]
 
-                for bag_box, bag_cls in zip(bag_boxes, bag_classes):
+                for bag_box, bag_cls, bag_conf in zip(
+                    bag_boxes, bag_classes, bag_confs
+                ):
                     if (
                         compute_intersection_ratio(hand_box, bag_box)
                         >= intersection_threshold
                     ):
-                        bag_vector[int(bag_cls)] = 1
+                        bag_vector[int(bag_cls)] = max(
+                            bag_vector[int(bag_cls)], bag_conf
+                        )
                 bag_vectors.append(bag_vector)
 
             track_bag_vectors.append(np.concatenate(bag_vectors))
