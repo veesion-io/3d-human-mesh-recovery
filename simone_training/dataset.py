@@ -81,6 +81,7 @@ class TrackDataset(Dataset):
         window_duration,
         tracks_path="tracks",
         images_path="results",
+        bag_detections_path="detected_bags",
         target_fps=3.0,
         mode="train",
         max_num_tracks=2,
@@ -100,6 +101,7 @@ class TrackDataset(Dataset):
         self.tracks_path = tracks_path
         self.images_path = images_path
         self.target_fps = target_fps
+        self.bag_detections_path = bag_detections_path
         self.max_num_tracks = max_num_tracks
         self.mode = mode
 
