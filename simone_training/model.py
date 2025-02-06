@@ -69,7 +69,7 @@ class VideoClassifier(nn.Module):
             nk, num_bag_classes, keypoint_hidden_dim
         )
         self.no_track_score = nn.Parameter(torch.tensor(-1.0))
-        self.track_fc = nn.Linear(keypoint_hidden_dim, 1)
+        self.track_fc = nn.Linear(keypoint_hidden_dim * 2, 1)
 
     def forward(self, poses_list, bag_features, video_indices, num_videos):
         keypoint_features = self.keypoint_bag_encoder(poses_list, bag_features)
