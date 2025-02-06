@@ -94,8 +94,8 @@ def main():
                     continue
                 num_tracks = data["poses"].size(0)
                 if num_tracks > 0:
-                    poses_list.append(data["poses"].cuda())
-                    bag_features_list.append(data["bag_features"].cuda())
+                    poses_list.append(data["poses"])
+                    bag_features_list.append(data["bag_features"])
                     video_indices.extend([video_idx] * num_tracks)
                 labels.append(data["label"])
                 video_idx += 1
@@ -103,8 +103,8 @@ def main():
             if not poses_list:
                 continue
 
-            poses_list = torch.cat(poses_list, dim=0)
-            bag_features_list = torch.cat(bag_features_list, dim=0)
+            poses_list = torch.cat(poses_list, dim=0).cuda()
+            bag_features_list = torch.cat(bag_features_list, dim=0).cuda()
             video_indices = torch.tensor(video_indices, dtype=torch.long).cuda()
             labels = torch.tensor(labels, dtype=torch.float32).cuda()
 
@@ -160,8 +160,8 @@ def main():
                         continue
                     num_tracks = data["poses"].size(0)
                     if num_tracks > 0:
-                        poses_list.append(data["poses"].cuda())
-                        bag_features_list.append(data["bag_features"].cuda())
+                        poses_list.append(data["poses"])
+                        bag_features_list.append(data["bag_features"])
                         video_indices.extend([video_idx] * num_tracks)
                     labels.append(data["label"])
                     video_idx += 1
@@ -169,8 +169,8 @@ def main():
                 if not poses_list:
                     continue
 
-                poses_list = torch.cat(poses_list, dim=0)
-                bag_features_list = torch.cat(bag_features_list, dim=0)
+                poses_list = torch.cat(poses_list, dim=0).cuda()
+                bag_features_list = torch.cat(bag_features_list, dim=0).cuda()
                 video_indices = torch.tensor(video_indices, dtype=torch.long).cuda()
                 labels = torch.tensor(labels, dtype=torch.float32).cuda()
                 with torch.amp.autocast("cuda"):
