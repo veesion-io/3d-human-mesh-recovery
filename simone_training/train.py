@@ -51,7 +51,7 @@ def main():
         batch_size=batch_size,
         shuffle=True,
         collate_fn=collate_fn,
-        num_workers=24,
+        num_workers=12,
     )
     val_dataset = TrackDataset(
         "simone_subset.json",
@@ -64,7 +64,7 @@ def main():
         batch_size=batch_size,
         shuffle=False,
         collate_fn=collate_fn,
-        num_workers=24,
+        num_workers=12,
     )
 
     model = VideoClassifier(
@@ -73,7 +73,7 @@ def main():
         keypoint_hidden_dim=keypoint_hidden_dim,
         final_hidden_dim=final_hidden_dim,
     ).cuda()
-
+    model = torch.compile(model)
     optimizer = Adam(model.parameters(), lr=learning_rate)
     criterion = nn.BCEWithLogitsLoss()
 
@@ -106,7 +106,7 @@ def main():
             labels = torch.tensor(labels, dtype=torch.float32).cuda()
 
             optimizer.zero_grad()
-            with torch.amp.autocast("cuda"):
+            with torch.amp.autocast("cuda", dtype=torch.float16):
                 outputs = model(
                     poses_list, bag_features_list, video_indices, len(labels)
                 )
