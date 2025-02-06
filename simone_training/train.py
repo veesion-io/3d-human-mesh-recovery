@@ -75,7 +75,7 @@ def main():
         num_bag_classes=num_bag_classes,
         keypoint_hidden_dim=keypoint_hidden_dim,
     ).cuda()
-    model = torch.compile(model)
+    # model = torch.compile(model)
     optimizer = Adam(model.parameters(), lr=learning_rate)
     criterion = nn.BCEWithLogitsLoss()
 
@@ -121,11 +121,11 @@ def main():
             correct += (predictions == labels).sum().item()
             total += labels.size(0)
             iterations += 1
-            print(
-                loss.item(),
-                outputs.data.cpu().numpy().tolist(),
-                labels.data.cpu().numpy().astype(int).tolist(),
-            )
+        print(
+            loss.item(),
+            outputs.data.cpu().numpy().tolist(),
+            labels.data.cpu().numpy().astype(int).tolist(),
+        )
 
         avg_train_loss = train_loss / iterations
         train_accuracy = correct / total if total > 0 else 0
@@ -173,11 +173,11 @@ def main():
                 correct += (predictions == labels).sum().item()
                 total += labels.size(0)
                 iterations += 1
-                print(
-                    loss.item(),
-                    outputs.data.cpu().numpy().tolist(),
-                    labels.data.cpu().numpy().astype(int).tolist(),
-                )
+            print(
+                loss.item(),
+                outputs.data.cpu().numpy().tolist(),
+                labels.data.cpu().numpy().astype(int).tolist(),
+            )
         avg_val_loss = val_loss / iterations
         val_accuracy = correct / total if total > 0 else 0
         writer.add_scalar("Loss/Validation", avg_val_loss, epoch + 1)
