@@ -23,7 +23,7 @@ keypoint_hidden_dim = 8
 final_hidden_dim = 16
 learning_rate = 1e-4
 target_fps = 2.0
-batch_size = 1
+batch_size = 4
 num_epochs = 200
 save_path = "checkpoints"
 os.makedirs(save_path, exist_ok=True)
@@ -51,7 +51,7 @@ def main():
         batch_size=batch_size,
         shuffle=True,
         collate_fn=collate_fn,
-        num_workers=1,
+        num_workers=24,
     )
     val_dataset = TrackDataset(
         "simone_subset.json",
@@ -64,7 +64,7 @@ def main():
         batch_size=batch_size,
         shuffle=False,
         collate_fn=collate_fn,
-        num_workers=1,
+        num_workers=24,
     )
 
     model = VideoClassifier(
