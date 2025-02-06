@@ -233,6 +233,7 @@ class TrackDataset(Dataset):
             for track_id, intersection in tracks_intersections
             if intersection > 0.4
         ]
+        print("selected_tracks", selected_tracks)
         for track_id in selected_tracks:
             cropped_track_info = self.crop_track(
                 track_id,
@@ -244,6 +245,7 @@ class TrackDataset(Dataset):
             bags_presences = self.load_bag_presence(
                 track_id, video_name, video_tracks, cropped_track_info
             )
+            print("bags_presences", bags_presences)
 
             tracks_data.append(
                 (
