@@ -2,12 +2,9 @@ import torch
 from torch.utils.data import Dataset
 import numpy as np
 import json
-from glob import glob
-import traceback
 from functools import lru_cache
 import pickle
 import numpy as np
-from glob import glob
 import os
 import cv2
 
@@ -55,9 +52,6 @@ def find_window_label(video_meta_data, window):
 
 
 import os
-from lib.models.smpl import SMPL
-from lib.vis.traj import fit_to_ground_easy, traj_filter
-from lib.vis.renderer import Renderer
 
 
 def find_closest(sorted_list1, sorted_list2):
