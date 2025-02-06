@@ -20,7 +20,7 @@ from simone_training.model import VideoClassifier
 nk = 58  # Number of keypoints
 num_bag_classes = 13  # Example number of bag classes
 keypoint_hidden_dim = 32
-learning_rate = 1e-4
+learning_rate = 1e-3
 target_fps = 2.0
 batch_size = 32
 num_epochs = 200
