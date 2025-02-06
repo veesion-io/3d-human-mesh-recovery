@@ -191,7 +191,7 @@ def main():
                     else 0
                 )
                 sys.stdout.write(
-                    f"\rEpoch {epoch + 1}/{num_epochs}, Batch {batch_idx + 1}/{len(train_loader)}, Speed: {speed:.2f} samples/sec"
+                    f"\rEpoch {epoch + 1}/{num_epochs}, Batch {batch_idx + 1}/{len(val_loader)}, Speed: {speed:.2f} samples/sec"
                 )
                 sys.stdout.flush()
             print()
