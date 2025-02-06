@@ -5,6 +5,24 @@ import json
 from glob import glob
 import traceback
 from functools import lru_cache
+import pickle
+import numpy as np
+from glob import glob
+import os
+import cv2
+
+
+def compute_intersection_ratio(box1, box2):
+    """Compute the percentage of the area of box2 that intersects with box1."""
+    x1 = max(box1[0], box2[0])
+    y1 = max(box1[1], box2[1])
+    x2 = min(box1[2], box2[2])
+    y2 = min(box1[3], box2[3])
+
+    inter_area = max(0, x2 - x1) * max(0, y2 - y1)
+    box2_area = (box2[2] - box2[0]) * (box2[3] - box2[1])
+
+    return inter_area / box2_area if box2_area > 0 else 0
 
 
 def compute_timestamp_intersection(window, timespan, normalize=True):
@@ -64,8 +82,6 @@ class TrackDataset(Dataset):
         tracks_path="tracks",
         images_path="results",
         target_fps=3.0,
-        hands_height=128,
-        hands_width=128,
         mode="train",
         max_num_tracks=2,
     ):
@@ -84,8 +100,6 @@ class TrackDataset(Dataset):
         self.tracks_path = tracks_path
         self.images_path = images_path
         self.target_fps = target_fps
-        self.hands_height = hands_height
-        self.hands_width = hands_width
         self.max_num_tracks = max_num_tracks
         self.mode = mode
 
@@ -126,40 +140,58 @@ class TrackDataset(Dataset):
     def load_frame(self, frame_path):
         return cv2.imread(frame_path)
 
-    def load_hands_regions(
-        self, track_id, video_name, video_tracks, cropped_track_info
+    def load_bag_presence(
+        self,
+        track_id,
+        video_name,
+        video_tracks,
+        cropped_track_info,
+        intersection_threshold=0.25,
     ):
+        """Load bag presence vector based on intersection ratio with hand regions."""
         video_barename = os.path.splitext(video_name)[0]
-        img_folder = os.path.join(
-            self.images_path, video_barename.split(".")[0], "images"
+        detection_file = os.path.join(
+            self.bag_detections_path, f"{video_barename}_detections.pkl"
         )
-        imgfiles = sorted(glob(f"{img_folder}/*.jpg"))
-        track_hands = []
+
+        if not os.path.exists(detection_file):
+            raise FileNotFoundError(f"Bag detection file not found: {detection_file}")
+
+        with open(detection_file, "rb") as f:
+            bag_detections = pickle.load(f)
+
+        num_bag_classes = 13
+        track_bag_vectors = []
+
         for frame_id in cropped_track_info["frames_ids"]:
-            img = np.ascontiguousarray(
-                self.load_frame(imgfiles[frame_id])[:, :, ::-1], dtype=np.uint8
-            )
+            if frame_id not in bag_detections:
+                track_bag_vectors.append(np.zeros(num_bag_classes, dtype=np.uint8))
+                continue
+
             person_hands, height = video_tracks["hands"][frame_id][track_id]
-            frame_hands_regions = []
+            bag_boxes = bag_detections[frame_id]["boxes"]
+            bag_classes = bag_detections[frame_id]["classes"]
+
+            bag_vectors = []
             for x, y in person_hands:
+                bag_vector = np.zeros(num_bag_classes, dtype=np.uint8)
                 dx = int(0.21 * height)
                 dy = int(0.15 * height)
-                # y = img.shape[1] - y
                 x1, y1 = (int(x - 0.25 * dx), int(y - dy))
                 x2, y2 = (int(x + 1.75 * dx), int(y + dy))
-                hand_region = img[x1:x2, y1:y2]
-                if 0 in hand_region.shape:
-                    frame_hands_regions.append(
-                        (
-                            127 * np.ones((self.hands_width, self.hands_height, 3))
-                        ).astype(np.uint8)
-                    )
-                else:
-                    frame_hands_regions.append(
-                        cv2.resize(hand_region, (self.hands_width, self.hands_height))
-                    )
-            track_hands.append(frame_hands_regions)
-        return track_hands
+                hand_box = [x1, y1, x2, y2]
+
+                for bag_box, bag_cls in zip(bag_boxes, bag_classes):
+                    if (
+                        compute_intersection_ratio(hand_box, bag_box)
+                        >= intersection_threshold
+                    ):
+                        bag_vector[int(bag_cls)] = 1
+                bag_vectors.append(bag_vector)
+
+            track_bag_vectors.append(np.concatenate(bag_vectors))
+
+        return track_bag_vectors
 
     def window_intersection(self, video_fps, frames_ids, window):
         track_timestamps = np.array(frames_ids) / video_fps
@@ -207,13 +239,14 @@ class TrackDataset(Dataset):
                 self.target_fps,
                 [start_time, end_time],
             )
-            hands_regions = self.load_hands_regions(
+            bags_presences = self.load_bag_presence(
                 track_id, video_name, video_tracks, cropped_track_info
             )
+
             tracks_data.append(
                 (
                     torch.from_numpy(cropped_track_info["vertices"]),
-                    torch.from_numpy(np.array(hands_regions)),
+                    torch.from_numpy(np.array(bags_presences)),
                 )
             )
         label = find_window_label(video_meta_data, [start_time, end_time])
@@ -227,20 +260,16 @@ class TrackDataset(Dataset):
             # )
             return {
                 "poses": torch.empty(0),
-                "hands_regions": torch.empty(0),
+                "bags_presences": torch.empty(0),
                 "label": label,
             }
         formatted_data = {
             "poses": torch.stack([x[0] for x in tracks_data]),
-            "hands_regions": torch.stack([x[1] for x in tracks_data]),
+            "bags_presences": torch.stack([x[1] for x in tracks_data]),
             "label": label,
         }
         if self.mode == "train":
-            for track_num in range(len(formatted_data["hands_regions"])):
-                if np.random.choice(2):
-                    formatted_data["hands_regions"][track_num] = torch.flip(
-                        formatted_data["hands_regions"][track_num], (3,)
-                    )
+            for track_num in range(len(formatted_data["bags_presences"])):
                 formatted_data["poses"][track_num] = random_horizontal_rotation_3d(
                     formatted_data["poses"][track_num]
                 )
@@ -252,30 +281,12 @@ class TrackDataset(Dataset):
                     formatted_data["poses"][track_num] = random_horizontal_flip_3d(
                         formatted_data["poses"][track_num], axis=2
                     )
-        formatted_data["hands_regions"][:, :, :, :, :, 0] = (
-            formatted_data["hands_regions"][:, :, :, :, :, 0]
-            .div(255.0)
-            .sub(0.485)
-            .div(0.229)
-        )
-        formatted_data["hands_regions"][:, :, :, :, :, 1] = (
-            formatted_data["hands_regions"][:, :, :, :, :, 1]
-            .div(255.0)
-            .sub(0.456)
-            .div(0.224)
-        )
-        formatted_data["hands_regions"][:, :, :, :, :, 2] = (
-            formatted_data["hands_regions"][:, :, :, :, :, 2]
-            .div(255.0)
-            .sub(0.406)
-            .div(0.225)
-        )
 
         # os.makedirs("inputs", exist_ok=True)
         # np.save(
         #     f"inputs/{os.path.splitext(video_name)[0]}_{start_time}.npy", formatted_data
         # )
-        # np.save("hands.npy", formatted_data["hands_regions"].numpy())
+        # np.save("hands.npy", formatted_data["bags_presences"].numpy())
         # print(video_name, start_time)
         # dvsdv
         return formatted_data

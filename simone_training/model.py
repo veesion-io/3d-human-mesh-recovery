@@ -1,20 +1,19 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
-
-import torch.nn as nn
-import torch.nn.functional as F
 from torch.nn import TransformerEncoder, TransformerEncoderLayer
 from torchvision.models import convnext_tiny, ConvNeXt_Tiny_Weights
 
 
-class Keypoint3DTrajectoryEncoder(nn.Module):
-    def __init__(self, nk, hidden_dim):
+class KeypointBagEncoder(nn.Module):
+    def __init__(self, nk, num_bag_classes, hidden_dim):
         super().__init__()
         self.hidden_dim = hidden_dim
         self.conv1 = nn.Conv1d(
-            in_channels=nk * 3, out_channels=hidden_dim, kernel_size=3, padding=1
+            in_channels=(nk * 3) + 2 * num_bag_classes,
+            out_channels=hidden_dim,
+            kernel_size=3,
+            padding=1,
         )
         self.conv2 = nn.Conv1d(
             in_channels=hidden_dim, out_channels=hidden_dim, kernel_size=3, padding=1
@@ -29,125 +28,66 @@ class Keypoint3DTrajectoryEncoder(nn.Module):
             batch_first=True,
         )
 
-        # Replace Transformer with TransformerEncoder
         encoder_layer = TransformerEncoderLayer(
             d_model=hidden_dim * 2, nhead=8, dim_feedforward=256
         )
         self.transformer_encoder = TransformerEncoder(encoder_layer, num_layers=3)
 
-        self.positional_encoding = nn.Parameter(
-            torch.randn(1, 512, hidden_dim * 2)  # Match GRU output size (bidirectional)
-        )
+        self.positional_encoding = nn.Parameter(torch.randn(1, 512, hidden_dim * 2))
 
-    def forward(self, keypoint_trajectories):
+    def forward(self, keypoint_trajectories, bag_features):
         B, T, nk, _ = keypoint_trajectories.shape
 
-        # Flatten nk and 3 dimensions, transpose to (B, C, T)
-        x = keypoint_trajectories.view(B, T, -1).permute(0, 2, 1)  # (B, C, T)
+        x = keypoint_trajectories.view(B, T, -1)  # Flatten nk and 3 dimensions
+        x = torch.cat([x, bag_features], dim=-1)  # Concatenate bag features
+        x = x.permute(0, 2, 1)  # (B, C, T)
 
-        # Apply convolutions
         x = F.relu(self.conv1(x))
         x = F.relu(self.conv2(x))
         x = F.relu(self.conv3(x))
 
-        # Transpose back to (B, T, C)
-        x = x.permute(0, 2, 1)
+        x = x.permute(0, 2, 1)  # (B, T, C)
 
-        # Apply GRU
         x, _ = self.gru(x)  # (B, T, hidden_dim * 2)
 
-        # Positional encoding
         if self.positional_encoding.size(1) < T:
             raise ValueError(
                 f"Positional encoding length ({self.positional_encoding.size(1)}) is less than input sequence length ({T})."
             )
         x = x + self.positional_encoding[:, :T, :]
 
-        # TransformerEncoder expects input as (T, B, C)
         x = x.permute(1, 0, 2)
         x = self.transformer_encoder(x)
-        x = x.permute(1, 0, 2)  # Back to (B, T, C)
+        x = x.permute(1, 0, 2)
 
-        # Aggregate temporal features
-        return x.mean(dim=1)  # (B, hidden_dim * 2)
-
-
-import torchvision
-
-
-class HandImageEncoder(nn.Module):
-    def __init__(self, pretrained_model_name="resnet18", output_dim=256):
-        super().__init__()
-        # self.feature_extractor = torchvision.models.efficientnet_b0(
-        #     weights="IMAGENET1K_V1"
-        # )
-        self.feature_extractor = convnext_tiny(
-            weights=ConvNeXt_Tiny_Weights.IMAGENET1K_V1
-        )
-        # self.feature_extractor = torch.hub.load(
-        #     "pytorch/vision:v0.10.0", pretrained_model_name, pretrained=True
-        # )
-        self.feature_extractor.fc = nn.Identity()  # Remove classification layer
-        self.fc = nn.Linear(
-            1000, output_dim
-        )  # Adjust input size based on the pretrained model
-
-    def forward(self, hand_images):
-        B, T, _, H, W, C = hand_images.shape
-        hand_images = hand_images.view(
-            B * T * 2, H, W, C
-        )  # Combine batch, time, and hand dimensions
-        hand_images = hand_images.permute(0, 3, 1, 2)
-        features = self.feature_extractor(hand_images.float())
-        features = self.fc(features)
-        features, _ = features.view(B, T, 2, -1).max(dim=2)  # Pooling over two hands
-        features, _ = features.max(dim=1)  # Pooling over all frames hands
-        return features  # (B, output_dim)
+        return x.mean(dim=1)
 
 
 class VideoClassifier(nn.Module):
-    def __init__(self, nk, keypoint_hidden_dim, hand_feature_dim, final_hidden_dim):
+    def __init__(self, nk, num_bag_classes, keypoint_hidden_dim, final_hidden_dim):
         super().__init__()
-        self.keypoint_encoder = Keypoint3DTrajectoryEncoder(nk, keypoint_hidden_dim)
-        self.hand_encoder = HandImageEncoder(output_dim=hand_feature_dim)
-        self.no_track_score = nn.Parameter(
-            torch.tensor(-1.0)
-        )  # Learnable score for no-track cases
+        self.keypoint_bag_encoder = KeypointBagEncoder(
+            nk, num_bag_classes, keypoint_hidden_dim
+        )
+        self.no_track_score = nn.Parameter(torch.tensor(-1.0))
         self.track_fc = nn.Sequential(
-            nn.Linear(keypoint_hidden_dim * 2 + hand_feature_dim, final_hidden_dim),
+            nn.Linear(keypoint_hidden_dim * 2, final_hidden_dim),
             nn.ReLU(),
             nn.Linear(final_hidden_dim, final_hidden_dim // 2),
             nn.ReLU(),
             nn.Linear(final_hidden_dim // 2, 1),
         )
 
-    def forward(self, poses_list, hands_list, video_indices, num_videos):
-        """
-        Args:
-            poses_list: Tensor of shape (N, T, nk, 3), all tracks concatenated
-            hands_list: Tensor of shape (N, T, 2, h, w, c), all hand regions concatenated
-            video_indices: Tensor of shape (N,), mapping each track to its video
+    def forward(self, poses_list, bag_features, video_indices, num_videos):
+        keypoint_features = self.keypoint_bag_encoder(poses_list, bag_features)
+        track_logits = self.track_fc(keypoint_features).squeeze(-1)
 
-        Returns:
-            video_predictions: Tensor of shape (B,), video-level predictions
-        """
-        # Encode all tracks together
-        keypoint_features = self.keypoint_encoder(
-            poses_list
-        )  # (N, keypoint_hidden_dim)
-        hand_features = self.hand_encoder(hands_list)  # (N, hand_feature_dim)
-
-        # Combine features and compute per-track logits
-        track_features = torch.cat([keypoint_features, hand_features], dim=-1)
-        track_logits = self.track_fc(track_features).squeeze(-1)  # (N,)
-
-        # Aggregate track predictions back to videos
         video_logits = torch.full(
             (num_videos,), -float("inf"), device=track_logits.device
-        ).half()  # Initialize logits
+        ).half()
 
         video_logits = torch.scatter_reduce(
-            video_logits,  # Destination tensor
+            video_logits,
             dim=0,
             index=video_indices,
             src=track_logits,
@@ -155,15 +95,8 @@ class VideoClassifier(nn.Module):
             include_self=False,
         )
 
-        # Replace -inf with learnable score for videos with no tracks
         video_logits = torch.where(
             video_logits == -float("inf"), self.no_track_score, video_logits
         )
-        # Final video-level prediction
 
         return video_logits
-
-
-# Example usage
-# Assuming the inputs for a video are a list of tuples (keypoints_tensor, hand_images_tensor)
-# where keypoints_tensor is of shape (T, nk, 3) and hand_images_tensor is of shape (T, 2, h, w)
