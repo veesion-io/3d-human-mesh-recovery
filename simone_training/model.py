@@ -28,7 +28,7 @@ class KeypointBagEncoder(nn.Module):
         )
 
         encoder_layer = TransformerEncoderLayer(
-            d_model=hidden_dim * 2, nhead=8, dim_feedforward=256
+            d_model=hidden_dim, nhead=8, dim_feedforward=256
         )
         self.transformer_encoder = TransformerEncoder(encoder_layer, num_layers=3)
 
