@@ -184,6 +184,7 @@ class TrackDataset(Dataset):
                 hand_box = [x1, y1, x2, y2]
 
                 for bag_box, bag_cls in zip(bag_boxes, bag_classes):
+                    print("bag", bag_box, bag_cls, hand_box)
                     if (
                         compute_intersection_ratio(hand_box, bag_box)
                         >= intersection_threshold
