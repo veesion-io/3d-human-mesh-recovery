@@ -32,7 +32,7 @@ class KeypointBagEncoder(nn.Module):
         )
         self.transformer_encoder = TransformerEncoder(encoder_layer, num_layers=3)
 
-        self.positional_encoding = nn.Parameter(torch.randn(1, 512, hidden_dim * 2))
+        self.positional_encoding = nn.Parameter(torch.randn(1, 512, hidden_dim))
 
     def forward(self, keypoint_trajectories, bag_features):
         B, T, nk, _ = keypoint_trajectories.shape
@@ -63,13 +63,13 @@ class KeypointBagEncoder(nn.Module):
 
 
 class VideoClassifier(nn.Module):
-    def __init__(self, nk, num_bag_classes, keypoint_hidden_dim, final_hidden_dim):
+    def __init__(self, nk, num_bag_classes, keypoint_hidden_dim):
         super().__init__()
         self.keypoint_bag_encoder = KeypointBagEncoder(
             nk, num_bag_classes, keypoint_hidden_dim
         )
         self.no_track_score = nn.Parameter(torch.tensor(-1.0))
-        self.track_fc = nn.Linear(keypoint_hidden_dim * 2, 1)
+        self.track_fc = nn.Linear(keypoint_hidden_dim, 1)
 
     def forward(self, poses_list, bag_features, video_indices, num_videos):
         keypoint_features = self.keypoint_bag_encoder(poses_list, bag_features)
