@@ -51,8 +51,8 @@ for video_file in tqdm(video_files, desc="Processing Videos"):
         OUTPUT_DIR, f"{os.path.splitext(video_file)[0]}_detections.pkl"
     )
 
-    if os.path.exists(output_file):
-        print(f"Skipping {video_file}: Already processed.")
-        continue
+    # if os.path.exists(output_file):
+    #     print(f"Skipping {video_file}: Already processed.")
+    #     continue
 
     process_video(video_path, output_file)
