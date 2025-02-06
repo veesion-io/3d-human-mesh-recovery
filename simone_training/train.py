@@ -51,7 +51,7 @@ def main():
         shuffle=True,
         persistent_workers=True,
         collate_fn=collate_fn,
-        num_workers=12,
+        num_workers=32,
         pin_memory=True,
     )
     val_dataset = TrackDataset(
@@ -124,7 +124,7 @@ def main():
             iterations += 1
             compute_time = time.time() - start_time
             speed = (
-                batch_size / (compute_time / (batch_idx + 1)) if compute_time > 0 else 0
+                batch_size * (batch_idx + 1) / compute_time if compute_time > 0 else 0
             )
             sys.stdout.write(
                 f"\rEpoch {epoch + 1}/{num_epochs}, Batch {batch_idx + 1}/{len(train_loader)}, Speed: {speed:.2f} samples/sec"
@@ -186,7 +186,7 @@ def main():
                 iterations += 1
                 compute_time = time.time() - start_time
                 speed = (
-                    batch_size / (compute_time / (batch_idx + 1))
+                    batch_size * (batch_idx + 1) / compute_time
                     if compute_time > 0
                     else 0
                 )
