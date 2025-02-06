@@ -148,7 +148,7 @@ class TrackDataset(Dataset):
         video_name,
         video_tracks,
         cropped_track_info,
-        intersection_threshold=0.25,
+        intersection_threshold=0.1,
     ):
         """Load bag presence vector based on intersection ratio with hand regions."""
         video_barename = os.path.splitext(video_name)[0]
@@ -177,8 +177,8 @@ class TrackDataset(Dataset):
             bag_vectors = []
             for x, y in person_hands:
                 bag_vector = np.zeros(num_bag_classes, dtype=np.uint8)
-                dx = int(0.21 * height)
-                dy = int(0.15 * height)
+                dx = int(0.25 * height)
+                dy = int(0.25 * height)
                 x1, y1 = (int(x - 0.25 * dx), int(y - dy))
                 x2, y2 = (int(x + 1.75 * dx), int(y + dy))
                 hand_box = [x1, y1, x2, y2]
