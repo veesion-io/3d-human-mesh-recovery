@@ -152,7 +152,7 @@ def main():
         iterations = 0
         start_time = time.time()
         with torch.no_grad():
-            for batch in val_loader:
+            for batch_idx, batch in enumerate(val_loader):
                 poses_list, bag_features_list, video_indices, labels = [], [], [], []
                 video_idx = 0
                 for data in batch:
