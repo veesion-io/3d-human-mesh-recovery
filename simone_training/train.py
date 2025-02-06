@@ -50,8 +50,10 @@ def main():
         train_dataset,
         batch_size=batch_size,
         shuffle=True,
+        persistent_workers=True,
         collate_fn=collate_fn,
         num_workers=12,
+        pin_memory=True,
     )
     val_dataset = TrackDataset(
         "simone_subset.json",
@@ -63,8 +65,10 @@ def main():
         val_dataset,
         batch_size=batch_size,
         shuffle=False,
+        persistent_workers=True,
         collate_fn=collate_fn,
         num_workers=12,
+        pin_memory=True,
     )
 
     model = VideoClassifier(
