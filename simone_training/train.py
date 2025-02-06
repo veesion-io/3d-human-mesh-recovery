@@ -121,9 +121,9 @@ def main():
             iterations += 1
             print(
                 loss.item(),
-                list(outputs.data.cpu().numpy()),
-                list(labels.data.cpu().numpy().astype(int)),
-                list(video_indices.data.cpu().numpy()),
+                outputs.data.cpu().numpy().tolist(),
+                labels.data.cpu().numpy().astype(int).tolist(),
+                video_indices.data.cpu().numpy().tolist(),
             )
 
         avg_train_loss = train_loss / iterations
@@ -174,11 +174,10 @@ def main():
                 iterations += 1
                 print(
                     loss.item(),
-                    list(outputs.data.cpu().numpy()),
-                    list(labels.data.cpu().numpy().astype(int)),
-                    list(video_indices.data.cpu().numpy()),
+                    outputs.data.cpu().numpy().tolist(),
+                    labels.data.cpu().numpy().astype(int).tolist(),
+                    video_indices.data.cpu().numpy().tolist(),
                 )
-
         avg_val_loss = val_loss / iterations
         val_accuracy = correct / total if total > 0 else 0
         writer.add_scalar("Loss/Validation", avg_val_loss, epoch + 1)
