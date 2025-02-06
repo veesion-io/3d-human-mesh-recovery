@@ -28,11 +28,11 @@ class KeypointBagEncoder(nn.Module):
         )
 
         encoder_layer = TransformerEncoderLayer(
-            d_model=hidden_dim, nhead=8, dim_feedforward=256
+            d_model=hidden_dim * 2, nhead=8, dim_feedforward=256
         )
         self.transformer_encoder = TransformerEncoder(encoder_layer, num_layers=3)
 
-        self.positional_encoding = nn.Parameter(torch.randn(1, 512, hidden_dim))
+        self.positional_encoding = nn.Parameter(torch.randn(1, 512, hidden_dim * 2))
 
     def forward(self, keypoint_trajectories, bag_features):
         B, T, nk, _ = keypoint_trajectories.shape
