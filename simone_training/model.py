@@ -74,6 +74,7 @@ class VideoClassifier(nn.Module):
 
     def forward(self, poses_list, bag_features, video_indices, num_videos):
         keypoint_features = self.keypoint_bag_encoder(poses_list, bag_features)
+        print(poses_list[0], bag_features[0], keypoint_features[0])
         track_logits = self.track_fc(keypoint_features).squeeze(-1)
 
         video_logits = torch.full(
