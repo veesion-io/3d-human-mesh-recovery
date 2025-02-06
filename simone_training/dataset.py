@@ -154,7 +154,7 @@ class TrackDataset(Dataset):
 
         for frame_id in cropped_track_info["frames_ids"]:
             if frame_id not in bag_detections:
-                track_bag_vectors.append(np.zeros(num_bag_classes, dtype=np.uint8))
+                track_bag_vectors.append(np.zeros(num_bag_classes * 2, dtype=np.uint8))
                 continue
 
             person_hands, height = video_tracks["hands"][frame_id][track_id]
