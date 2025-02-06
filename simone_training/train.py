@@ -1,21 +1,17 @@
 import torch
 from torch import multiprocessing as mp
 import time
+import sys
+import os
+from torch.utils.data import DataLoader
+from torch.optim import Adam
+from torch.utils.tensorboard import SummaryWriter
+from torch import nn
+from simone_training.dataset import TrackDataset
+from simone_training.model import VideoClassifier
 
 if __name__ == "__main__":
     mp.set_start_method("spawn")
-
-from torch.utils.data import DataLoader
-from torch.optim import Adam
-import os
-import sys
-from torch.utils.tensorboard import SummaryWriter
-from torch import nn
-
-sys.path.insert(0, os.path.dirname(__file__) + "/..")
-
-from simone_training.dataset import TrackDataset
-from simone_training.model import VideoClassifier
 
 # Hyperparameters
 nk = 58  # Number of keypoints
@@ -84,7 +80,7 @@ def main():
         total = 0
         iterations = 0
         start_time = time.time()
-        for batch in train_loader:
+        for batch_idx, batch in enumerate(train_loader):
             batch_start_time = time.time()
             poses_list, bag_features_list, video_indices, labels = [], [], [], []
             video_idx = 0
@@ -123,9 +119,11 @@ def main():
             iterations += 1
             batch_time = time.time() - batch_start_time
             speed = batch_size / batch_time if batch_time > 0 else 0
-            print(
-                f"Batch processing time: {batch_time:.4f} seconds, Speed: {speed:.2f} samples/sec"
+            sys.stdout.write(
+                f"\rEpoch {epoch + 1}/{num_epochs}, Batch {batch_idx + 1}/{len(train_loader)}, Speed: {speed:.2f} samples/sec"
             )
+            sys.stdout.flush()
+        print()
         epoch_time = time.time() - start_time
         print(f"Epoch {epoch + 1} training time: {epoch_time:.2f} seconds")
 
