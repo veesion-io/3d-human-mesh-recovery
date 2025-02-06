@@ -1,10 +1,13 @@
 import torch
 from torch import multiprocessing as mp
-import time
-import sys
-import os
+
+if __name__ == "__main__":
+    mp.set_start_method("spawn")
+
 from torch.utils.data import DataLoader
 from torch.optim import Adam
+import os
+import sys
 from torch.utils.tensorboard import SummaryWriter
 from torch import nn
 
@@ -12,9 +15,6 @@ sys.path.insert(0, os.path.dirname(__file__) + "/..")
 
 from simone_training.dataset import TrackDataset
 from simone_training.model import VideoClassifier
-
-if __name__ == "__main__":
-    mp.set_start_method("spawn")
 
 # Hyperparameters
 nk = 58  # Number of keypoints
@@ -30,6 +30,9 @@ os.makedirs(save_path, exist_ok=True)
 
 def collate_fn(batch):
     return batch
+
+
+import time
 
 
 def main():
@@ -84,7 +87,6 @@ def main():
         iterations = 0
         start_time = time.time()
         for batch_idx, batch in enumerate(train_loader):
-            batch_start_time = time.time()
             poses_list, bag_features_list, video_indices, labels = [], [], [], []
             video_idx = 0
             for data in batch:
@@ -120,15 +122,20 @@ def main():
             correct += (predictions == labels).sum().item()
             total += labels.size(0)
             iterations += 1
-            batch_time = time.time() - batch_start_time
-            speed = batch_size / batch_time if batch_time > 0 else 0
+            compute_time = time.time() - start_time
+            speed = (
+                batch_size / (compute_time / (batch_idx + 1)) if compute_time > 0 else 0
+            )
             sys.stdout.write(
                 f"\rEpoch {epoch + 1}/{num_epochs}, Batch {batch_idx + 1}/{len(train_loader)}, Speed: {speed:.2f} samples/sec"
             )
             sys.stdout.flush()
         print()
-        epoch_time = time.time() - start_time
-        print(f"Epoch {epoch + 1} training time: {epoch_time:.2f} seconds")
+        print(
+            loss.item(),
+            outputs.data.cpu().numpy().tolist(),
+            labels.data.cpu().numpy().astype(int).tolist(),
+        )
 
         avg_train_loss = train_loss / iterations
         train_accuracy = correct / total if total > 0 else 0
@@ -136,6 +143,69 @@ def main():
         writer.add_scalar("Accuracy/Train", train_accuracy, epoch + 1)
         print(
             f"Epoch {epoch + 1}/{num_epochs}, Train Loss: {avg_train_loss:.4f}, Train Accuracy: {train_accuracy:.4f}"
+        )
+
+        model.eval()
+        val_loss = 0
+        correct = 0
+        total = 0
+        iterations = 0
+        start_time = time.time()
+        with torch.no_grad():
+            for batch in val_loader:
+                poses_list, bag_features_list, video_indices, labels = [], [], [], []
+                video_idx = 0
+                for data in batch:
+                    if data is None:
+                        continue
+                    num_tracks = data["poses"].size(0)
+                    if num_tracks > 0:
+                        poses_list.append(data["poses"].cuda())
+                        bag_features_list.append(data["bag_features"].cuda())
+                        video_indices.extend([video_idx] * num_tracks)
+                    labels.append(data["label"])
+                    video_idx += 1
+
+                if not poses_list:
+                    continue
+
+                poses_list = torch.cat(poses_list, dim=0)
+                bag_features_list = torch.cat(bag_features_list, dim=0)
+                video_indices = torch.tensor(video_indices, dtype=torch.long).cuda()
+                labels = torch.tensor(labels, dtype=torch.float32).cuda()
+                with torch.amp.autocast("cuda"):
+                    outputs = model(
+                        poses_list, bag_features_list, video_indices, len(labels)
+                    )
+                    loss = criterion(outputs, labels)
+                val_loss += loss.item()
+
+                predictions = (outputs > 0.0).float()
+                correct += (predictions == labels).sum().item()
+                total += labels.size(0)
+                iterations += 1
+                compute_time = time.time() - start_time
+                speed = (
+                    batch_size / (compute_time / (batch_idx + 1))
+                    if compute_time > 0
+                    else 0
+                )
+                sys.stdout.write(
+                    f"\rEpoch {epoch + 1}/{num_epochs}, Batch {batch_idx + 1}/{len(train_loader)}, Speed: {speed:.2f} samples/sec"
+                )
+                sys.stdout.flush()
+            print()
+            print(
+                loss.item(),
+                outputs.data.cpu().numpy().tolist(),
+                labels.data.cpu().numpy().astype(int).tolist(),
+            )
+        avg_val_loss = val_loss / iterations
+        val_accuracy = correct / total if total > 0 else 0
+        writer.add_scalar("Loss/Validation", avg_val_loss, epoch + 1)
+        writer.add_scalar("Accuracy/Validation", val_accuracy, epoch + 1)
+        print(
+            f"Epoch {epoch + 1}/{num_epochs}, Val Loss: {avg_val_loss:.4f}, Val Accuracy: {val_accuracy:.4f}"
         )
 
         torch.save(model.state_dict(), f"{save_path}/model_epoch_{epoch + 1}.pth")
