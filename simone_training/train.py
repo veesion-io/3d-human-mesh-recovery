@@ -197,7 +197,10 @@ class VideoClassifierTrainer:
             compute_time = time.time() - start_time
             speed = total / compute_time if compute_time > 0 else 0
             sys.stdout.write(
-                f"\rEpoch {epoch + 1}/{num_epochs}, Batch {batch_idx + 1}/{num_batches_in_epoch}, Speed: {speed:.2f} samples/sec, Loss:{train_loss / num_batches_in_epoch:.2f}"
+                f"\rEpoch {epoch + 1}/{num_epochs}, Batch {batch_idx + 1}/"
+                f"{num_batches_in_epoch}, Speed: {speed:.2f} samples/sec, "
+                f"Loss:{train_loss / (batch_idx + 1):.2f}, Accuracy: "
+                f"{correct / max(1, total):.3f}"
             )
             sys.stdout.flush()
 
@@ -237,7 +240,10 @@ class VideoClassifierTrainer:
                 compute_time = time.time() - start_time
                 speed = total / compute_time if compute_time > 0 else 0
                 sys.stdout.write(
-                    f"\rEpoch {epoch + 1}/{num_epochs}, Batch {batch_idx + 1}/{num_batches_in_epoch}, Speed: {speed:.2f} samples/sec, Loss:{val_loss / num_batches_in_epoch:.2f}"
+                    f"\rEpoch {epoch + 1}/{num_epochs}, Batch {batch_idx + 1}/"
+                    f"{num_batches_in_epoch}, Speed: {speed:.2f} samples/sec, "
+                    f"Loss: {val_loss / (batch_idx + 1):.3f}, Accuracy: "
+                    f"{correct / max(1, total):.3f}"
                 )
                 sys.stdout.flush()
 

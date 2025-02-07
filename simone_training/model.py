@@ -12,28 +12,18 @@ class KeypointBagEncoder(nn.Module):
         # Linear projection for bag features
         self.bag_projection = nn.Linear(2 * num_bag_classes, hidden_dim)
 
-        # Convolution layers with residual connections
-        self.conv1 = nn.Conv1d(
-            in_channels=(nk * 3) + hidden_dim,
-            out_channels=hidden_dim,
-            kernel_size=3,
-            padding=1,
-        )
-        self.conv2 = nn.Conv1d(
-            in_channels=hidden_dim, out_channels=hidden_dim, kernel_size=3, padding=1
-        )
-        self.conv3 = nn.Conv1d(
-            in_channels=hidden_dim, out_channels=hidden_dim, kernel_size=5, padding=2
-        )
-
-        # Layer Normalization before Transformer
-        self.norm1 = nn.LayerNorm(hidden_dim)
+        # Input projection for keypoints (to match Transformer input size)
+        self.keypoint_projection = nn.Linear(nk * 3, hidden_dim)
 
         # Transformer Encoder
         encoder_layer = TransformerEncoderLayer(
-            d_model=hidden_dim, nhead=8, dim_feedforward=256, dropout=0.2
+            d_model=hidden_dim,
+            nhead=8,
+            dim_feedforward=64,  # Increased capacity
+            dropout=0.1,
+            batch_first=True,  # Ensures input shape is (B, T, C)
         )
-        self.transformer_encoder = TransformerEncoder(encoder_layer, num_layers=3)
+        self.transformer_encoder = TransformerEncoder(encoder_layer, num_layers=4)
 
         # Learnable Positional Encoding
         self.positional_encoding = nn.Parameter(torch.randn(1, 512, hidden_dim) * 0.02)
@@ -41,24 +31,20 @@ class KeypointBagEncoder(nn.Module):
     def forward(self, keypoint_trajectories, bag_features):
         B, T, nk, _ = keypoint_trajectories.shape
 
-        # Flatten keypoints and apply bag feature transformation
+        # Normalize Keypoints
+        keypoint_trajectories = (
+            keypoint_trajectories - keypoint_trajectories.mean()
+        ) / (keypoint_trajectories.std() + 1e-6)
+
+        # Flatten keypoints and apply feature transformations
         keypoints = keypoint_trajectories.view(B, T, -1)  # (B, T, nk*3)
+        keypoints = self.keypoint_projection(keypoints)  # (B, T, hidden_dim)
         bag_features = self.bag_projection(bag_features)  # (B, T, hidden_dim)
-        x = torch.cat([keypoints, bag_features], dim=-1)  # (B, T, nk*3 + hidden_dim)
 
-        # Convert to (B, C, T) format for convolutions
-        x = x.permute(0, 2, 1)
+        # Combine features
+        x = keypoints + bag_features  # Element-wise sum
 
-        # Apply convolutions with residual connections
-        x = F.leaky_relu(self.conv1(x))
-        x = F.leaky_relu(self.conv2(x))
-        x = F.leaky_relu(self.conv3(x))
-
-        # Convert back to (B, T, C) and apply LayerNorm
-        x = x.permute(0, 2, 1)
-        x = self.norm1(x)
-
-        # Add learnable positional encoding
+        # Add positional encoding
         if self.positional_encoding.size(1) < T:
             raise ValueError(
                 f"Positional encoding length ({self.positional_encoding.size(1)}) is less than input sequence length ({T})."
@@ -66,9 +52,7 @@ class KeypointBagEncoder(nn.Module):
         x = x + self.positional_encoding[:, :T, :]
 
         # Transformer Encoder
-        x = x.permute(1, 0, 2)  # (T, B, C)
         x = self.transformer_encoder(x)
-        x = x.permute(1, 0, 2)  # Back to (B, T, C)
 
         # Aggregate features
         return x.mean(dim=1)  # (B, hidden_dim)
