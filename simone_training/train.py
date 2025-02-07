@@ -32,8 +32,8 @@ target_fps = 2.0
 batch_size = 2
 num_epochs = 200
 save_path = "checkpoints"
-num_train_processes = 2
-num_val_processes = 2
+num_train_processes = 32
+num_val_processes = 12
 os.makedirs(save_path, exist_ok=True)
 
 
