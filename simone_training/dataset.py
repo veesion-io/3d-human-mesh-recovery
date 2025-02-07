@@ -263,9 +263,6 @@ class TrackDataset(Dataset):
                 "bag_features": torch.empty(0),
                 "label": label,
             }
-        label = False
-        for x in tracks_data:
-            label = label or x[0][0][0][2] < x[0][-1][10][1]
         formatted_data = {
             "poses": torch.stack([x[0] for x in tracks_data]),
             "bag_features": torch.stack([x[1] for x in tracks_data]).float(),
@@ -284,7 +281,10 @@ class TrackDataset(Dataset):
                     formatted_data["poses"][track_num] = random_horizontal_flip_3d(
                         formatted_data["poses"][track_num], axis=2
                     )
-
+        label = False
+        for x in tracks_data:
+            label = label or x[0][0][0][2] < x[0][-1][10][1]
+        formatted_data["label"] = label
         # os.makedirs("inputs", exist_ok=True)
         # np.save(
         #     f"inputs/{os.path.splitext(video_name)[0]}_{start_time}.npy", formatted_data

@@ -199,7 +199,7 @@ class VideoClassifierTrainer:
             sys.stdout.write(
                 f"\rEpoch {epoch + 1}/{num_epochs}, Batch {batch_idx + 1}/"
                 f"{num_batches_in_epoch}, Speed: {speed:.2f} samples/sec, "
-                f"Loss:{train_loss / (batch_idx + 1):.2f}, Accuracy: "
+                f"Loss:{train_loss / (batch_idx + 1):.3f}, Accuracy: "
                 f"{correct / max(1, total):.3f}"
             )
             sys.stdout.flush()
