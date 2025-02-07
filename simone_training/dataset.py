@@ -247,7 +247,7 @@ class TrackDataset(Dataset):
             ) / 10.0
             tracks_data.append(
                 (
-                    torch.from_numpy(vertices),
+                    vertices,
                     torch.from_numpy(np.array(bags_presences)),
                 )
             )
