@@ -283,7 +283,7 @@ class TrackDataset(Dataset):
                     )
         label = False
         for x in formatted_data["poses"]:
-            label = label or x[0][0][0][2] < x[0][-1][10][1]
+            label = label or x[0][0][2] < x[-1][10][1]
         formatted_data["label"] = label
         # os.makedirs("inputs", exist_ok=True)
         # np.save(
