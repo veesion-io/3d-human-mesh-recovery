@@ -36,6 +36,8 @@ num_train_processes = 32
 num_val_processes = 12
 os.makedirs(save_path, exist_ok=True)
 
+import numpy as np
+
 
 def collate_fn(batch):
     return batch
@@ -53,11 +55,11 @@ class DataLoaderProcess(mp.Process):
         self.stop_event = stop_event
 
     def run(self):
+        dataset_length = len(self.dataset)
         while not self.stop_event.is_set():
-            for sample in self.dataset:
-                self.data_queue.put(sample)
-                if self.stop_event.is_set():
-                    break
+            self.data_queue.put(self.dataset[np.random.choice(dataset_length)])
+            if self.stop_event.is_set():
+                break
 
 
 # Batch Constructor Thread
@@ -167,8 +169,8 @@ class VideoClassifierTrainer:
         self.model.train()
         train_loss, correct, total = 0, 0, 0
         start_time = time.time()
-
-        for batch_idx in range(len(self.train_dataset) // self.batch_size):
+        num_batches_in_epoch = len(self.train_dataset) // self.batch_size + 1
+        for batch_idx in range(num_batches_in_epoch):
             poses_list, bag_features_list, video_indices, labels = (
                 self.train_batch_queue.get()
             )
@@ -189,7 +191,7 @@ class VideoClassifierTrainer:
             compute_time = time.time() - start_time
             speed = total / compute_time if compute_time > 0 else 0
             sys.stdout.write(
-                f"\rEpoch {epoch + 1}/{num_epochs}, Batch {batch_idx + 1}/{len(self.train_dataset)}, Speed: {speed:.2f} samples/sec"
+                f"\rEpoch {epoch + 1}/{num_epochs}, Batch {batch_idx + 1}/{num_batches_in_epoch}, Speed: {speed:.2f} samples/sec"
             )
             sys.stdout.flush()
 
@@ -211,8 +213,9 @@ class VideoClassifierTrainer:
         self.model.eval()
         val_loss, correct, total = 0, 0, 0
         start_time = time.time()
+        num_batches_in_epoch = len(self.val_dataset) // self.batch_size + 1
         with torch.no_grad():
-            for batch_idx in range(len(self.val_dataset) // self.batch_size):
+            for batch_idx in range(num_batches_in_epoch):
                 if self.val_batch_queue.empty():
                     continue
 
@@ -231,7 +234,7 @@ class VideoClassifierTrainer:
                 compute_time = time.time() - start_time
                 speed = total / compute_time if compute_time > 0 else 0
                 sys.stdout.write(
-                    f"\rEpoch {epoch + 1}/{num_epochs}, Batch {batch_idx + 1}/{len(self.val_dataset)}, Speed: {speed:.2f} samples/sec"
+                    f"\rEpoch {epoch + 1}/{num_epochs}, Batch {batch_idx + 1}/{num_batches_in_epoch}, Speed: {speed:.2f} samples/sec"
                 )
                 sys.stdout.flush()
 
