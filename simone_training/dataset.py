@@ -236,7 +236,7 @@ class TrackDataset(Dataset):
             bags_presences = self.load_bag_presence(
                 track_id, video_name, video_tracks, cropped_track_info
             )
-
+            print(torch.from_numpy(cropped_track_info["vertices"]).shape)
             tracks_data.append(
                 (
                     torch.from_numpy(cropped_track_info["vertices"]),
@@ -264,7 +264,9 @@ class TrackDataset(Dataset):
         }
         formatted_data["poses"] = (
             formatted_data["poses"]
-            - formatted_data["poses"][len(formatted_data["poses"]) // 2]
+            - torch.mean(
+                formatted_data["poses"][len(formatted_data["poses"]) // 2], dim=[1]
+            )
         ) / 10.0
         if self.mode == "train":
             for track_num in range(len(formatted_data["bag_features"])):
