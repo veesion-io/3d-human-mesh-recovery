@@ -245,7 +245,9 @@ class TrackDataset(Dataset):
                 .unsqueeze(0)
                 .unsqueeze(0)
             ) / 10.0
-
+            min_vals = np.min(vertices.reshape(-1, 3), axis=0)
+            max_vals = np.max(vertices.reshape(-1, 3), axis=0)
+            print(min_vals, max_vals)
             tracks_data.append(
                 (
                     torch.from_numpy(cropped_track_info["vertices"]),
@@ -285,11 +287,11 @@ class TrackDataset(Dataset):
                         formatted_data["poses"][track_num], axis=2
                     )
 
-        os.makedirs("inputs", exist_ok=True)
-        np.save(
-            f"inputs/{os.path.splitext(video_name)[0]}_{start_time}.npy", formatted_data
-        )
-        np.save("hands.npy", formatted_data["bag_features"].numpy())
+        # os.makedirs("inputs", exist_ok=True)
+        # np.save(
+        #     f"inputs/{os.path.splitext(video_name)[0]}_{start_time}.npy", formatted_data
+        # )
+        # np.save("hands.npy", formatted_data["bag_features"].numpy())
         # print(video_name, start_time)
         # dvsdv
         return formatted_data
