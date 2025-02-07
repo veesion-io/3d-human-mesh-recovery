@@ -77,7 +77,7 @@ class BatchConstructor(threading.Thread):
         video_idx = 0
         while not self.stop_event.is_set():
             try:
-                sample = self.data_queue.get(timeout=1)
+                sample = self.data_queue.get()
                 if sample is None:
                     continue
                 num_tracks = sample["poses"].size(0)
@@ -172,9 +172,6 @@ class VideoClassifierTrainer:
         start_time = time.time()
 
         for _ in range(len(self.train_dataset) // self.batch_size):
-            if self.train_batch_queue.empty():
-                continue
-
             poses_list, bag_features_list, video_indices, labels = (
                 self.train_batch_queue.get()
             )
