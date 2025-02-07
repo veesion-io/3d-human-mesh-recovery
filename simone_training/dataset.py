@@ -248,8 +248,7 @@ class TrackDataset(Dataset):
                     torch.from_numpy(np.array(bags_presences)),
                 )
             )
-        # label = find_window_label(video_meta_data, [start_time, end_time])
-        label = False
+        label = find_window_label(video_meta_data, [start_time, end_time])
         if len(tracks_data) == 0:
             # print(
             #     "No track",
@@ -281,10 +280,6 @@ class TrackDataset(Dataset):
                     formatted_data["poses"][track_num] = random_horizontal_flip_3d(
                         formatted_data["poses"][track_num], axis=2
                     )
-        label = False
-        for x in formatted_data["poses"]:
-            label = label or x[0][0][2] < x[-1][10][1]
-        formatted_data["label"] = label
         # os.makedirs("inputs", exist_ok=True)
         # np.save(
         #     f"inputs/{os.path.splitext(video_name)[0]}_{start_time}.npy", formatted_data

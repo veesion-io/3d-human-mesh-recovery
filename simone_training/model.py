@@ -12,14 +12,12 @@ class KeypointBagEncoder(nn.Module):
         # Transformer Encoder
         encoder_layer = TransformerEncoderLayer(
             d_model=self.hidden_dim,
-            nhead=2,
-            dim_feedforward=hidden_dim,
+            nhead=8,
+            dim_feedforward=hidden_dim,  # Keep the hidden_dim for feedforward layer
             dropout=0.1,
             batch_first=True,
         )
-        self.transformer_encoder = TransformerEncoder(
-            encoder_layer, num_layers=2
-        )  # Reduce layers
+        self.transformer_encoder = TransformerEncoder(encoder_layer, num_layers=4)
 
         # Learnable Positional Encoding
         self.positional_encoding = nn.Parameter(
