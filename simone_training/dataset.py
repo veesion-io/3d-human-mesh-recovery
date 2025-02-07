@@ -236,6 +236,11 @@ class TrackDataset(Dataset):
             bags_presences = self.load_bag_presence(
                 track_id, video_name, video_tracks, cropped_track_info
             )
+            vertices = torch.from_numpy(cropped_track_info["vertices"])
+            vertices = (
+                vertices - torch.mean(vertices[len(vertices) // 2], dim=[0])
+            ) / 10.0
+
             tracks_data.append(
                 (
                     torch.from_numpy(cropped_track_info["vertices"]),
@@ -261,13 +266,6 @@ class TrackDataset(Dataset):
             "bag_features": torch.stack([x[1] for x in tracks_data]).float(),
             "label": label,
         }
-        print(formatted_data["poses"].shape)
-        formatted_data["poses"] = (
-            formatted_data["poses"]
-            - torch.mean(
-                formatted_data["poses"][len(formatted_data["poses"]) // 2], dim=[1]
-            )
-        ) / 10.0
         if self.mode == "train":
             for track_num in range(len(formatted_data["bag_features"])):
                 formatted_data["poses"][track_num] = random_horizontal_rotation_3d(
