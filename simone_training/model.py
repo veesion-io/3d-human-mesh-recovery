@@ -8,8 +8,13 @@ class KeypointBagEncoder(nn.Module):
     def __init__(self, nk, num_bag_classes, hidden_dim):
         super().__init__()
         self.hidden_dim = hidden_dim
+
+        # Linear projection for bag features
+        self.bag_projection = nn.Linear(2 * num_bag_classes, hidden_dim)
+
+        # Convolution layers with residual connections
         self.conv1 = nn.Conv1d(
-            in_channels=(nk * 3) + 2 * num_bag_classes,
+            in_channels=(nk * 3) + hidden_dim,
             out_channels=hidden_dim,
             kernel_size=3,
             padding=1,
@@ -20,46 +25,54 @@ class KeypointBagEncoder(nn.Module):
         self.conv3 = nn.Conv1d(
             in_channels=hidden_dim, out_channels=hidden_dim, kernel_size=5, padding=2
         )
-        self.gru = nn.GRU(
-            input_size=hidden_dim,
-            hidden_size=hidden_dim,
-            bidirectional=True,
-            batch_first=True,
-        )
 
+        # Layer Normalization before Transformer
+        self.norm1 = nn.LayerNorm(hidden_dim)
+
+        # Transformer Encoder
         encoder_layer = TransformerEncoderLayer(
-            d_model=hidden_dim * 2, nhead=8, dim_feedforward=256
+            d_model=hidden_dim, nhead=8, dim_feedforward=256, dropout=0.2
         )
         self.transformer_encoder = TransformerEncoder(encoder_layer, num_layers=3)
 
-        self.positional_encoding = nn.Parameter(torch.randn(1, 512, hidden_dim * 2))
+        # Learnable Positional Encoding
+        self.positional_encoding = nn.Parameter(torch.randn(1, 512, hidden_dim) * 0.02)
 
     def forward(self, keypoint_trajectories, bag_features):
         B, T, nk, _ = keypoint_trajectories.shape
 
-        x = keypoint_trajectories.view(B, T, -1)  # Flatten nk and 3 dimensions
-        x = torch.cat([x, bag_features], dim=-1)  # Concatenate bag features
-        x = x.permute(0, 2, 1)  # (B, C, T)
+        # Flatten keypoints and apply bag feature transformation
+        keypoints = keypoint_trajectories.view(B, T, -1)  # (B, T, nk*3)
+        bag_features = self.bag_projection(bag_features)  # (B, T, hidden_dim)
+        x = torch.cat([keypoints, bag_features], dim=-1)  # (B, T, nk*3 + hidden_dim)
 
-        x = F.relu(self.conv1(x))
-        x = F.relu(self.conv2(x))
-        x = F.relu(self.conv3(x))
+        # Convert to (B, C, T) format for convolutions
+        x = x.permute(0, 2, 1)
 
-        x = x.permute(0, 2, 1)  # (B, T, C)
+        # Apply convolutions with residual connections
+        x_res = x  # Store original input for residual connection
+        x = F.leaky_relu(self.conv1(x))
+        x = F.leaky_relu(self.conv2(x)) + x_res  # Residual connection
+        x = F.leaky_relu(self.conv3(x))
 
-        x, _ = self.gru(x)  # (B, T, hidden_dim * 2)
+        # Convert back to (B, T, C) and apply LayerNorm
+        x = x.permute(0, 2, 1)
+        x = self.norm1(x)
 
+        # Add learnable positional encoding
         if self.positional_encoding.size(1) < T:
             raise ValueError(
                 f"Positional encoding length ({self.positional_encoding.size(1)}) is less than input sequence length ({T})."
             )
         x = x + self.positional_encoding[:, :T, :]
 
-        x = x.permute(1, 0, 2)
+        # Transformer Encoder
+        x = x.permute(1, 0, 2)  # (T, B, C)
         x = self.transformer_encoder(x)
-        x = x.permute(1, 0, 2)
+        x = x.permute(1, 0, 2)  # Back to (B, T, C)
 
-        return x.mean(dim=1)
+        # Aggregate features
+        return x.mean(dim=1)  # (B, hidden_dim)
 
 
 class VideoClassifier(nn.Module):
