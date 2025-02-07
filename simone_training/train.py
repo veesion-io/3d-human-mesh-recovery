@@ -227,7 +227,7 @@ class VideoClassifierTrainer:
                 poses_list, bag_features_list, video_indices, labels = (
                     self.val_batch_queue.get()
                 )
-                with torch.amp.autocast("cuda"):
+                with torch.amp.autocast("cuda", dtype=torch.float16):
                     outputs = self.model(
                         poses_list, bag_features_list, video_indices, len(labels)
                     )
