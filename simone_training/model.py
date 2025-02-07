@@ -50,9 +50,8 @@ class KeypointBagEncoder(nn.Module):
         x = x.permute(0, 2, 1)
 
         # Apply convolutions with residual connections
-        x_res = x  # Store original input for residual connection
         x = F.leaky_relu(self.conv1(x))
-        x = F.leaky_relu(self.conv2(x)) + x_res  # Residual connection
+        x = F.leaky_relu(self.conv2(x))
         x = F.leaky_relu(self.conv3(x))
 
         # Convert back to (B, T, C) and apply LayerNorm
