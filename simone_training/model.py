@@ -13,7 +13,7 @@ class KeypointBagEncoder(nn.Module):
         encoder_layer = TransformerEncoderLayer(
             d_model=(nk * 3) + (2 * num_bag_classes),  # No projection
             nhead=8,
-            dim_feedforward=512,
+            dim_feedforward=hidden_dim,
             dropout=0.1,
             batch_first=True,
         )
