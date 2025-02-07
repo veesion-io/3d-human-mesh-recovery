@@ -78,7 +78,7 @@ class BatchConstructor(threading.Thread):
         while not self.stop_event.is_set():
             try:
                 sample = self.data_queue.get(timeout=1)
-
+                print(sample)
                 for data in sample:
                     if data is None:
                         continue
