@@ -268,7 +268,6 @@ class TrackDataset(Dataset):
             "bag_features": torch.stack([x[1] for x in tracks_data]).float(),
             "label": label,
         }
-        print(formatted_data["bag_features"])
         if self.mode == "train":
             for track_num in range(len(formatted_data["bag_features"])):
                 formatted_data["poses"][track_num] = random_horizontal_rotation_3d(
@@ -283,10 +282,10 @@ class TrackDataset(Dataset):
                         formatted_data["poses"][track_num], axis=2
                     )
 
-        # os.makedirs("inputs", exist_ok=True)
-        # np.save(
-        #     f"inputs/{os.path.splitext(video_name)[0]}_{start_time}.npy", formatted_data
-        # )
+        os.makedirs("inputs", exist_ok=True)
+        np.save(
+            f"inputs/{os.path.splitext(video_name)[0]}_{start_time}.npy", formatted_data
+        )
         # np.save("hands.npy", formatted_data["bag_features"].numpy())
         # print(video_name, start_time)
         # dvsdv
