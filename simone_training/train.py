@@ -246,6 +246,7 @@ class VideoClassifierTrainer:
                     f"{correct / max(1, total):.3f}"
                 )
                 sys.stdout.flush()
+        print()
 
         print(
             loss.item(),
