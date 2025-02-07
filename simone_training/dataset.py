@@ -178,6 +178,7 @@ class TrackDataset(Dataset):
                         compute_intersection_ratio(hand_box, bag_box)
                         >= intersection_threshold
                     ):
+                        print(bag_cls, bag_conf)
                         bag_vector[int(bag_cls)] = max(
                             bag_vector[int(bag_cls)], bag_conf
                         )
