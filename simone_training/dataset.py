@@ -178,7 +178,6 @@ class TrackDataset(Dataset):
                         compute_intersection_ratio(hand_box, bag_box)
                         >= intersection_threshold
                     ):
-                        print(bag_cls, bag_conf)
                         bag_vector[int(bag_cls)] = max(
                             bag_vector[int(bag_cls)], bag_conf
                         )
@@ -267,6 +266,7 @@ class TrackDataset(Dataset):
             "bag_features": torch.stack([x[1] for x in tracks_data]).float(),
             "label": label,
         }
+        print(formatted_data["bag_features"])
         if self.mode == "train":
             for track_num in range(len(formatted_data["bag_features"])):
                 formatted_data["poses"][track_num] = random_horizontal_rotation_3d(
