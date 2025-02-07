@@ -239,11 +239,12 @@ class TrackDataset(Dataset):
                 track_id, video_name, video_tracks, cropped_track_info
             )
             vertices = torch.from_numpy(cropped_track_info["vertices"])
-            print(vertices[len(vertices) // 2])
             vertices = (
-                vertices - torch.mean(vertices[len(vertices) // 2], dim=[0])
+                vertices
+                - torch.mean(vertices[len(vertices) // 2], dim=[0])
+                .unsqueeze(0)
+                .unsqueeze(0)
             ) / 10.0
-            print(vertices[len(vertices) // 2])
 
             tracks_data.append(
                 (
