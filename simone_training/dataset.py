@@ -263,8 +263,9 @@ class TrackDataset(Dataset):
                 "bag_features": torch.empty(0),
                 "label": label,
             }
-        label = tracks_data[0][0][0][2] < tracks_data[0][-1][10][1]
-        print(label)
+        label = False
+        for x in tracks_data:
+            label = label or x[0][0][0][2] < x[0][-1][10][1]
         formatted_data = {
             "poses": torch.stack([x[0] for x in tracks_data]),
             "bag_features": torch.stack([x[1] for x in tracks_data]).float(),
