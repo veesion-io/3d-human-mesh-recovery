@@ -248,7 +248,8 @@ class TrackDataset(Dataset):
                     torch.from_numpy(np.array(bags_presences)),
                 )
             )
-        label = find_window_label(video_meta_data, [start_time, end_time])
+        # label = find_window_label(video_meta_data, [start_time, end_time])
+        label = False
         if len(tracks_data) == 0:
             # print(
             #     "No track",
@@ -262,6 +263,7 @@ class TrackDataset(Dataset):
                 "bag_features": torch.empty(0),
                 "label": label,
             }
+        label = tracks_data[0][0][0][2] < tracks_data[0][-1][10][1]
         formatted_data = {
             "poses": torch.stack([x[0] for x in tracks_data]),
             "bag_features": torch.stack([x[1] for x in tracks_data]).float(),
