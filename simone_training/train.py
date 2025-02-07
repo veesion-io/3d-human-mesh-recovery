@@ -55,6 +55,8 @@ class DataLoaderProcess(mp.Process):
         self.stop_event = stop_event
 
     def run(self):
+        seed = time.perf_counter_ns() % (2**32)  # Use nanoseconds for fine granularity
+        np.random.seed(seed)
         dataset_length = len(self.dataset)
         while not self.stop_event.is_set():
             self.data_queue.put(self.dataset[np.random.choice(dataset_length)])
