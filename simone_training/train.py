@@ -28,11 +28,12 @@ nk = 58  # Number of keypoints
 num_bag_classes = 13  # Example number of bag classes
 keypoint_hidden_dim = 32
 learning_rate = 1e-3
-target_fps = 2.0
+target_fps = 3.0
 batch_size = 32
 num_epochs = 200
 save_path = "checkpoints"
 num_train_processes = 32
+max_num_tracks = 3
 num_val_processes = 12
 os.makedirs(save_path, exist_ok=True)
 
@@ -127,7 +128,9 @@ class VideoClassifierTrainer:
         self.num_epochs = num_epochs
         self.optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
         self.criterion = nn.BCEWithLogitsLoss()
-        self.writer = SummaryWriter()
+        self.writer = SummaryWriter(
+            f"tensorboard_logs/keypoints_and_bags_{int(time.time())}"
+        )
         self.train_queue = mp.Queue(maxsize=64)
         self.val_queue = mp.Queue(maxsize=32)
         self.train_batch_queue = queue.Queue(maxsize=2)
@@ -268,12 +271,14 @@ if __name__ == "__main__":
         7.0,
         target_fps=target_fps,
         mode="train",
+        max_num_tracks=max_num_tracks,
     )
     val_dataset = TrackDataset(
         "simone_subset.json",
         7.0,
         target_fps=target_fps,
         mode="val",
+        max_num_tracks=max_num_tracks,
     )
 
     model = VideoClassifier(
