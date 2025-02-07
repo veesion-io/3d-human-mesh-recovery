@@ -258,11 +258,14 @@ class TrackDataset(Dataset):
                 "label": label,
             }
         formatted_data = {
-            "poses": torch.stack([x[0] for x in tracks_data]);
+            "poses": torch.stack([x[0] for x in tracks_data]),
             "bag_features": torch.stack([x[1] for x in tracks_data]).float(),
             "label": label,
         }
-        formatted_data["poses"] = (formatted_data["poses"] - formatted_data["poses"][len(formatted_data["poses"])//2])/10.0
+        formatted_data["poses"] = (
+            formatted_data["poses"]
+            - formatted_data["poses"][len(formatted_data["poses"]) // 2]
+        ) / 10.0
         if self.mode == "train":
             for track_num in range(len(formatted_data["bag_features"])):
                 formatted_data["poses"][track_num] = random_horizontal_rotation_3d(
