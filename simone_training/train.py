@@ -201,7 +201,7 @@ class VideoClassifierTrainer:
             outputs.data.cpu().numpy().tolist(),
             labels.data.cpu().numpy().astype(int).tolist(),
         )
-        avg_train_loss = train_loss / max(1, total)
+        avg_train_loss = train_loss / num_batches_in_epoch
         train_accuracy = correct / max(1, total)
         self.writer.add_scalar("Loss/Train", avg_train_loss, epoch + 1)
         self.writer.add_scalar("Accuracy/Train", train_accuracy, epoch + 1)
@@ -243,7 +243,7 @@ class VideoClassifierTrainer:
             outputs.data.cpu().numpy().tolist(),
             labels.data.cpu().numpy().astype(int).tolist(),
         )
-        avg_val_loss = val_loss / max(1, total)
+        avg_val_loss = val_loss / num_batches_in_epoch
         val_accuracy = correct / max(1, total)
         self.writer.add_scalar("Loss/Validation", avg_val_loss, epoch + 1)
         self.writer.add_scalar("Accuracy/Validation", val_accuracy, epoch + 1)
