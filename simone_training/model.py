@@ -7,13 +7,13 @@ from torch.nn import TransformerEncoder, TransformerEncoderLayer
 class KeypointBagEncoder(nn.Module):
     def __init__(self, nk, num_bag_classes, hidden_dim):
         super().__init__()
-        self.hidden_dim = hidden_dim
+        self.hidden_dim = (nk * 3) + (2 * num_bag_classes)  # Ensure correct d_model
 
         # Transformer Encoder
         encoder_layer = TransformerEncoderLayer(
-            d_model=(nk * 3) + (2 * num_bag_classes),  # No projection
+            d_model=self.hidden_dim,
             nhead=8,
-            dim_feedforward=hidden_dim,
+            dim_feedforward=hidden_dim,  # Keep the hidden_dim for feedforward layer
             dropout=0.1,
             batch_first=True,
         )
@@ -21,7 +21,7 @@ class KeypointBagEncoder(nn.Module):
 
         # Learnable Positional Encoding
         self.positional_encoding = nn.Parameter(
-            torch.randn(1, 512, (nk * 3) + (2 * num_bag_classes)) * 0.02
+            torch.randn(1, 512, self.hidden_dim) * 0.02
         )
 
     def forward(self, keypoint_trajectories, bag_features):
@@ -48,21 +48,26 @@ class KeypointBagEncoder(nn.Module):
         x = self.transformer_encoder(x)
 
         # Aggregate features
-        return x.mean(dim=1)  # (B, hidden_dim)
+        return x.mean(dim=1)  # (B, hidden_dim) now correct
 
 
 class VideoClassifier(nn.Module):
     def __init__(self, nk, num_bag_classes, keypoint_hidden_dim):
         super().__init__()
+        self.feature_dim = (nk * 3) + (2 * num_bag_classes)  # Ensure correct shape
         self.keypoint_bag_encoder = KeypointBagEncoder(
             nk, num_bag_classes, keypoint_hidden_dim
         )
         self.no_track_score = nn.Parameter(torch.tensor(-1.0))
-        self.track_fc = nn.Linear(keypoint_hidden_dim, 1)
+
+        # Fix `track_fc` to match Transformer output dim
+        self.track_fc = nn.Linear(self.feature_dim, 1)  # Correct input size
 
     def forward(self, poses_list, bag_features, video_indices, num_videos):
-        keypoint_features = self.keypoint_bag_encoder(poses_list, bag_features)
-        track_logits = self.track_fc(keypoint_features).squeeze(-1)
+        keypoint_features = self.keypoint_bag_encoder(
+            poses_list, bag_features
+        )  # (B, feature_dim)
+        track_logits = self.track_fc(keypoint_features).squeeze(-1)  # (B,)
 
         video_logits = torch.full(
             (num_videos,), -float("inf"), device=track_logits.device
