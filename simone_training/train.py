@@ -1,4 +1,14 @@
 import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from torch.nn import TransformerEncoder, TransformerEncoderLayer
+import multiprocessing as mp
+import queue
+import threading
+from torch.utils.tensorboard import SummaryWriter
+import time
+import sys
+import torch
 from torch import multiprocessing as mp
 
 if __name__ == "__main__":
@@ -35,24 +45,220 @@ def collate_fn(batch):
 import time
 
 
-def main():
-    run_name = "run_" + str(time.time()).split(".")[0]
-    writer = SummaryWriter(log_dir=f"tensorboard_logs/{run_name}")
+# Data Loading with Shared Queue
+class DataLoaderProcess(mp.Process):
+    def __init__(self, dataset, data_queue, stop_event):
+        super().__init__()
+        self.dataset = dataset
+        self.data_queue = data_queue
+        self.stop_event = stop_event
 
+    def run(self):
+        while not self.stop_event.is_set():
+            for sample in self.dataset:
+                self.data_queue.put(sample)
+                if self.stop_event.is_set():
+                    break
+
+
+# Batch Constructor Thread
+class BatchConstructor(threading.Thread):
+    def __init__(self, data_queue, batch_queue, batch_size, stop_event):
+        super().__init__()
+        self.data_queue = data_queue
+        self.batch_queue = batch_queue
+        self.batch_size = batch_size
+        self.stop_event = stop_event
+        self.batch = []
+
+    def run(self):
+        while not self.stop_event.is_set():
+            try:
+                sample = self.data_queue.get(timeout=1)
+                self.batch.append(sample)
+                if len(self.batch) >= self.batch_size:
+                    poses_list = torch.cat(
+                        [s["poses"] for s in self.batch], dim=0
+                    ).cuda()
+                    bag_features_list = torch.cat(
+                        [s["bag_features"] for s in self.batch], dim=0
+                    ).cuda()
+                    video_indices = torch.tensor(
+                        [s["video_index"] for s in self.batch], dtype=torch.long
+                    ).cuda()
+                    labels = torch.tensor(
+                        [s["label"] for s in self.batch], dtype=torch.float32
+                    ).cuda()
+
+                    self.batch_queue.put(
+                        (poses_list, bag_features_list, video_indices, labels)
+                    )
+                    self.batch = []
+            except queue.Empty:
+                continue
+
+
+# Training Function
+class VideoClassifierTrainer:
+    def __init__(
+        self,
+        model,
+        train_dataset,
+        val_dataset,
+        batch_size,
+        learning_rate,
+        num_epochs,
+    ):
+        self.model = model.cuda()
+        self.train_dataset = train_dataset
+        self.val_dataset = val_dataset
+        self.batch_size = batch_size
+        self.num_epochs = num_epochs
+        self.optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+        self.criterion = nn.BCEWithLogitsLoss()
+        self.writer = SummaryWriter()
+        self.train_queue = mp.Queue(maxsize=64)
+        self.val_queue = mp.Queue(maxsize=32)
+        self.train_batch_queue = queue.Queue(maxsize=2)
+        self.val_batch_queue = queue.Queue(maxsize=2)
+        self.stop_event = mp.Event()
+
+    def start_data_loaders(self):
+        self.train_loader_procs = [
+            DataLoaderProcess(self.train_dataset, self.train_queue, self.stop_event)
+            for _ in range(32)
+        ]
+        self.val_loader_procs = [
+            DataLoaderProcess(self.val_dataset, self.val_queue, self.stop_event)
+            for _ in range(12)
+        ]
+
+        self.train_batch_thread = BatchConstructor(
+            self.train_queue, self.train_batch_queue, self.batch_size, self.stop_event
+        )
+        self.val_batch_thread = BatchConstructor(
+            self.val_queue, self.val_batch_queue, self.batch_size, self.stop_event
+        )
+
+        for proc in self.train_loader_procs:
+            proc.start()
+        for proc in self.val_loader_procs:
+            proc.start()
+        self.train_batch_thread.start()
+        self.val_batch_thread.start()
+
+    def stop_data_loaders(self):
+        self.stop_event.set()
+        for proc in self.train_loader_procs:
+            proc.join()
+        for proc in self.val_loader_procs:
+            proc.join()
+        self.train_batch_thread.join()
+        self.val_batch_thread.join()
+
+    def train_epoch(self, epoch):
+        self.model.train()
+        train_loss, correct, total = 0, 0, 0
+        start_time = time.time()
+
+        for _ in range(len(self.train_dataset) // self.batch_size):
+            if self.train_batch_queue.empty():
+                continue
+
+            poses_list, bag_features_list, video_indices, labels = (
+                self.train_batch_queue.get()
+            )
+
+            self.optimizer.zero_grad()
+            with torch.amp.autocast("cuda", dtype=torch.float16):
+                outputs = self.model(
+                    poses_list, bag_features_list, video_indices, len(labels)
+                )
+                loss = self.criterion(outputs, labels)
+                loss.backward()
+                self.optimizer.step()
+
+            train_loss += loss.item()
+            predictions = (outputs > 0.0).float()
+            correct += (predictions == labels).sum().item()
+            total += labels.size(0)
+            compute_time = time.time() - start_time
+            speed = total / compute_time if compute_time > 0 else 0
+            sys.stdout.write(
+                f"\rEpoch {epoch + 1}, Training Speed: {speed:.2f} samples/sec"
+            )
+            sys.stdout.flush()
+
+        print()
+        print(
+            loss.item(),
+            outputs.data.cpu().numpy().tolist(),
+            labels.data.cpu().numpy().astype(int).tolist(),
+        )
+        avg_train_loss = train_loss / max(1, total)
+        train_accuracy = correct / max(1, total)
+        self.writer.add_scalar("Loss/Train", avg_train_loss, epoch + 1)
+        self.writer.add_scalar("Accuracy/Train", train_accuracy, epoch + 1)
+        print(
+            f"Epoch {epoch + 1}, Train Loss: {avg_train_loss:.4f}, Train Accuracy: {train_accuracy:.4f}"
+        )
+
+    def validate_epoch(self, epoch):
+        self.model.eval()
+        val_loss, correct, total = 0, 0, 0
+        start_time = time.time()
+        with torch.no_grad():
+            for _ in range(len(self.val_dataset) // self.batch_size):
+                if self.val_batch_queue.empty():
+                    continue
+
+                poses_list, bag_features_list, video_indices, labels = (
+                    self.val_batch_queue.get()
+                )
+                with torch.amp.autocast("cuda"):
+                    outputs = self.model(
+                        poses_list, bag_features_list, video_indices, len(labels)
+                    )
+                    loss = self.criterion(outputs, labels)
+                val_loss += loss.item()
+                predictions = (outputs > 0.0).float()
+                correct += (predictions == labels).sum().item()
+                total += labels.size(0)
+                compute_time = time.time() - start_time
+                speed = total / compute_time if compute_time > 0 else 0
+                sys.stdout.write(
+                    f"\rEpoch {epoch + 1}, Training Speed: {speed:.2f} samples/sec"
+                )
+                sys.stdout.flush()
+
+        print(
+            loss.item(),
+            outputs.data.cpu().numpy().tolist(),
+            labels.data.cpu().numpy().astype(int).tolist(),
+        )
+        avg_val_loss = val_loss / max(1, total)
+        val_accuracy = correct / max(1, total)
+        self.writer.add_scalar("Loss/Validation", avg_val_loss, epoch + 1)
+        self.writer.add_scalar("Accuracy/Validation", val_accuracy, epoch + 1)
+        print(
+            f"Epoch {epoch + 1}, Val Loss: {avg_val_loss:.4f}, Val Accuracy: {val_accuracy:.4f}"
+        )
+
+    def train(self):
+        self.start_data_loaders()
+        for epoch in range(self.num_epochs):
+            self.train_epoch(epoch)
+            self.validate_epoch(epoch)
+        self.stop_data_loaders()
+        self.writer.close()
+
+
+if __name__ == "__main__":
     train_dataset = TrackDataset(
         "simone_subset.json",
         7.0,
         target_fps=target_fps,
         mode="train",
-    )
-    train_loader = DataLoader(
-        train_dataset,
-        batch_size=batch_size,
-        shuffle=True,
-        persistent_workers=True,
-        collate_fn=collate_fn,
-        num_workers=32,
-        pin_memory=True,
     )
     val_dataset = TrackDataset(
         "simone_subset.json",
@@ -60,158 +266,18 @@ def main():
         target_fps=target_fps,
         mode="val",
     )
-    val_loader = DataLoader(
-        val_dataset,
-        batch_size=batch_size,
-        shuffle=False,
-        persistent_workers=True,
-        collate_fn=collate_fn,
-        num_workers=12,
-        pin_memory=True,
-    )
 
     model = VideoClassifier(
         nk=nk,
         num_bag_classes=num_bag_classes,
         keypoint_hidden_dim=keypoint_hidden_dim,
     ).cuda()
-    # model = torch.compile(model)
-    optimizer = Adam(model.parameters(), lr=learning_rate)
-    criterion = nn.BCEWithLogitsLoss()
-
-    for epoch in range(num_epochs):
-        model.train()
-        train_loss = 0
-        correct = 0
-        total = 0
-        iterations = 0
-        start_time = time.time()
-        for batch_idx, batch in enumerate(train_loader):
-            poses_list, bag_features_list, video_indices, labels = [], [], [], []
-            video_idx = 0
-            for data in batch:
-                if data is None:
-                    continue
-                num_tracks = data["poses"].size(0)
-                if num_tracks > 0:
-                    poses_list.append(data["poses"])
-                    bag_features_list.append(data["bag_features"])
-                    video_indices.extend([video_idx] * num_tracks)
-                labels.append(data["label"])
-                video_idx += 1
-
-            if not poses_list:
-                continue
-
-            poses_list = torch.cat(poses_list, dim=0).cuda()
-            bag_features_list = torch.cat(bag_features_list, dim=0).cuda()
-            video_indices = torch.tensor(video_indices, dtype=torch.long).cuda()
-            labels = torch.tensor(labels, dtype=torch.float32).cuda()
-
-            optimizer.zero_grad()
-            with torch.amp.autocast("cuda", dtype=torch.float16):
-                outputs = model(
-                    poses_list, bag_features_list, video_indices, len(labels)
-                )
-                loss = criterion(outputs, labels)
-                loss.backward()
-                optimizer.step()
-
-            train_loss += loss.item()
-            predictions = (outputs > 0.0).float()
-            correct += (predictions == labels).sum().item()
-            total += labels.size(0)
-            iterations += 1
-            compute_time = time.time() - start_time
-            speed = (
-                batch_size * (batch_idx + 1) / compute_time if compute_time > 0 else 0
-            )
-            sys.stdout.write(
-                f"\rEpoch {epoch + 1}/{num_epochs}, Batch {batch_idx + 1}/{len(train_loader)}, Speed: {speed:.2f} samples/sec"
-            )
-            sys.stdout.flush()
-        print()
-        print(
-            loss.item(),
-            outputs.data.cpu().numpy().tolist(),
-            labels.data.cpu().numpy().astype(int).tolist(),
-        )
-
-        avg_train_loss = train_loss / iterations
-        train_accuracy = correct / total if total > 0 else 0
-        writer.add_scalar("Loss/Train", avg_train_loss, epoch + 1)
-        writer.add_scalar("Accuracy/Train", train_accuracy, epoch + 1)
-        print(
-            f"Epoch {epoch + 1}/{num_epochs}, Train Loss: {avg_train_loss:.4f}, Train Accuracy: {train_accuracy:.4f}"
-        )
-
-        model.eval()
-        val_loss = 0
-        correct = 0
-        total = 0
-        iterations = 0
-        start_time = time.time()
-        with torch.no_grad():
-            for batch_idx, batch in enumerate(val_loader):
-                poses_list, bag_features_list, video_indices, labels = [], [], [], []
-                video_idx = 0
-                for data in batch:
-                    if data is None:
-                        continue
-                    num_tracks = data["poses"].size(0)
-                    if num_tracks > 0:
-                        poses_list.append(data["poses"])
-                        bag_features_list.append(data["bag_features"])
-                        video_indices.extend([video_idx] * num_tracks)
-                    labels.append(data["label"])
-                    video_idx += 1
-
-                if not poses_list:
-                    continue
-
-                poses_list = torch.cat(poses_list, dim=0).cuda()
-                bag_features_list = torch.cat(bag_features_list, dim=0).cuda()
-                video_indices = torch.tensor(video_indices, dtype=torch.long).cuda()
-                labels = torch.tensor(labels, dtype=torch.float32).cuda()
-                with torch.amp.autocast("cuda"):
-                    outputs = model(
-                        poses_list, bag_features_list, video_indices, len(labels)
-                    )
-                    loss = criterion(outputs, labels)
-                val_loss += loss.item()
-
-                predictions = (outputs > 0.0).float()
-                correct += (predictions == labels).sum().item()
-                total += labels.size(0)
-                iterations += 1
-                compute_time = time.time() - start_time
-                speed = (
-                    batch_size * (batch_idx + 1) / compute_time
-                    if compute_time > 0
-                    else 0
-                )
-                sys.stdout.write(
-                    f"\rEpoch {epoch + 1}/{num_epochs}, Batch {batch_idx + 1}/{len(val_loader)}, Speed: {speed:.2f} samples/sec"
-                )
-                sys.stdout.flush()
-            print()
-            print(
-                loss.item(),
-                outputs.data.cpu().numpy().tolist(),
-                labels.data.cpu().numpy().astype(int).tolist(),
-            )
-        avg_val_loss = val_loss / iterations
-        val_accuracy = correct / total if total > 0 else 0
-        writer.add_scalar("Loss/Validation", avg_val_loss, epoch + 1)
-        writer.add_scalar("Accuracy/Validation", val_accuracy, epoch + 1)
-        print(
-            f"Epoch {epoch + 1}/{num_epochs}, Val Loss: {avg_val_loss:.4f}, Val Accuracy: {val_accuracy:.4f}"
-        )
-
-        torch.save(model.state_dict(), f"{save_path}/model_epoch_{epoch + 1}.pth")
-
-    writer.close()
-
-
-if __name__ == "__main__":
-    main()
+    trainer = VideoClassifierTrainer(
+        model,
+        train_dataset,
+        val_dataset,
+        batch_size=batch_size,
+        learning_rate=learning_rate,
+        num_epochs=num_epochs,
+    )
+    trainer.train()
