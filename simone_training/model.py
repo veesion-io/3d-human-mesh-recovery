@@ -9,24 +9,20 @@ class KeypointBagEncoder(nn.Module):
         super().__init__()
         self.hidden_dim = hidden_dim
 
-        # Linear projection for bag features
-        self.bag_projection = nn.Linear(2 * num_bag_classes, hidden_dim)
-
-        # Input projection for keypoints (to match Transformer input size)
-        self.keypoint_projection = nn.Linear(nk * 3, hidden_dim)
-
         # Transformer Encoder
         encoder_layer = TransformerEncoderLayer(
-            d_model=hidden_dim,
+            d_model=(nk * 3) + (2 * num_bag_classes),  # No projection
             nhead=8,
-            dim_feedforward=64,  # Increased capacity
+            dim_feedforward=512,
             dropout=0.1,
-            batch_first=True,  # Ensures input shape is (B, T, C)
+            batch_first=True,
         )
         self.transformer_encoder = TransformerEncoder(encoder_layer, num_layers=4)
 
         # Learnable Positional Encoding
-        self.positional_encoding = nn.Parameter(torch.randn(1, 512, hidden_dim) * 0.02)
+        self.positional_encoding = nn.Parameter(
+            torch.randn(1, 512, (nk * 3) + (2 * num_bag_classes)) * 0.02
+        )
 
     def forward(self, keypoint_trajectories, bag_features):
         B, T, nk, _ = keypoint_trajectories.shape
@@ -36,13 +32,10 @@ class KeypointBagEncoder(nn.Module):
             keypoint_trajectories - keypoint_trajectories.mean()
         ) / (keypoint_trajectories.std() + 1e-6)
 
-        # Flatten keypoints and apply feature transformations
-        keypoints = keypoint_trajectories.view(B, T, -1)  # (B, T, nk*3)
-        keypoints = self.keypoint_projection(keypoints)  # (B, T, hidden_dim)
-        bag_features = self.bag_projection(bag_features)  # (B, T, hidden_dim)
-
-        # Combine features
-        x = keypoints + bag_features  # Element-wise sum
+        # Flatten keypoints and **concatenate** bag features
+        x = torch.cat(
+            [keypoint_trajectories.view(B, T, -1), bag_features], dim=-1
+        )  # (B, T, nk*3 + bag_features)
 
         # Add positional encoding
         if self.positional_encoding.size(1) < T:
