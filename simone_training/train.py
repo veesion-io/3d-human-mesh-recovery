@@ -89,18 +89,10 @@ class BatchConstructor(threading.Thread):
                     video_idx += 1
 
                 if len(poses_list) >= self.batch_size:
-                    poses_list = torch.cat(
-                        [s["poses"] for s in self.batch], dim=0
-                    ).cuda()
-                    bag_features_list = torch.cat(
-                        [s["bag_features"] for s in self.batch], dim=0
-                    ).cuda()
-                    video_indices = torch.tensor(
-                        [s["video_index"] for s in self.batch], dtype=torch.long
-                    ).cuda()
-                    labels = torch.tensor(
-                        [s["label"] for s in self.batch], dtype=torch.float32
-                    ).cuda()
+                    poses_list = torch.cat(poses_list, dim=0)
+                    bag_features_list = torch.cat(bag_features_list, dim=0).cuda()
+                    video_indices = torch.tensor(video_indices, dtype=torch.long).cuda()
+                    labels = torch.tensor(labels, dtype=torch.float32).cuda()
 
                     self.batch_queue.put(
                         (poses_list, bag_features_list, video_indices, labels)
