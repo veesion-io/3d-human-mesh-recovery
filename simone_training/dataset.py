@@ -245,12 +245,9 @@ class TrackDataset(Dataset):
                 .unsqueeze(0)
                 .unsqueeze(0)
             ) / 10.0
-            min_vals = np.min(vertices.reshape(-1, 3), axis=0)
-            max_vals = np.max(vertices.reshape(-1, 3), axis=0)
-            print(min_vals, max_vals)
             tracks_data.append(
                 (
-                    torch.from_numpy(cropped_track_info["vertices"]),
+                    torch.from_numpy(vertices),
                     torch.from_numpy(np.array(bags_presences)),
                 )
             )
