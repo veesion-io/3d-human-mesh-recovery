@@ -168,7 +168,7 @@ class VideoClassifierTrainer:
         train_loss, correct, total = 0, 0, 0
         start_time = time.time()
 
-        for _ in range(len(self.train_dataset) // self.batch_size):
+        for batch_idx in range(len(self.train_dataset) // self.batch_size):
             poses_list, bag_features_list, video_indices, labels = (
                 self.train_batch_queue.get()
             )
@@ -189,7 +189,7 @@ class VideoClassifierTrainer:
             compute_time = time.time() - start_time
             speed = total / compute_time if compute_time > 0 else 0
             sys.stdout.write(
-                f"\rEpoch {epoch + 1}, Training Speed: {speed:.2f} samples/sec"
+                f"\rEpoch {epoch + 1}/{num_epochs}, Batch {batch_idx + 1}/{len(self.train_dataset)}, Speed: {speed:.2f} samples/sec"
             )
             sys.stdout.flush()
 
@@ -212,7 +212,7 @@ class VideoClassifierTrainer:
         val_loss, correct, total = 0, 0, 0
         start_time = time.time()
         with torch.no_grad():
-            for _ in range(len(self.val_dataset) // self.batch_size):
+            for batch_idx in range(len(self.val_dataset) // self.batch_size):
                 if self.val_batch_queue.empty():
                     continue
 
@@ -231,7 +231,7 @@ class VideoClassifierTrainer:
                 compute_time = time.time() - start_time
                 speed = total / compute_time if compute_time > 0 else 0
                 sys.stdout.write(
-                    f"\rEpoch {epoch + 1}, Training Speed: {speed:.2f} samples/sec"
+                    f"\rEpoch {epoch + 1}/{num_epochs}, Batch {batch_idx + 1}/{len(self.val_dataset)}, Speed: {speed:.2f} samples/sec"
                 )
                 sys.stdout.flush()
 
