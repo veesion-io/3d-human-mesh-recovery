@@ -32,9 +32,11 @@ num_bag_classes = 13  # Example number of bag classes
 keypoint_hidden_dim = 32
 learning_rate = 1e-3
 target_fps = 2.0
-batch_size = 32
+batch_size = 2
 num_epochs = 200
 save_path = "checkpoints"
+num_train_processes = 2
+num_val_processes = 2
 os.makedirs(save_path, exist_ok=True)
 
 
@@ -136,11 +138,11 @@ class VideoClassifierTrainer:
     def start_data_loaders(self):
         self.train_loader_procs = [
             DataLoaderProcess(self.train_dataset, self.train_queue, self.stop_event)
-            for _ in range(32)
+            for _ in range(num_train_processes)
         ]
         self.val_loader_procs = [
             DataLoaderProcess(self.val_dataset, self.val_queue, self.stop_event)
-            for _ in range(12)
+            for _ in range(num_val_processes)
         ]
 
         self.train_batch_thread = BatchConstructor(
