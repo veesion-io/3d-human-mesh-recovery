@@ -81,6 +81,7 @@ class BatchConstructor(threading.Thread):
                     continue
                 num_tracks = sample["poses"].size(0)
                 if num_tracks > 0:
+                    print(sample["poses"].shape)
                     poses_list.append(sample["poses"])
                     bag_features_list.append(sample["bag_features"])
                     video_indices.extend([video_idx] * num_tracks)
