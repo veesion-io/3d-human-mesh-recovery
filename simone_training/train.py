@@ -190,7 +190,6 @@ class VideoClassifierTrainer:
                 self.optimizer.step()
 
             train_loss += loss.item()
-            print(loss.item())
 
             predictions = (outputs > 0.0).float()
             correct += (predictions == labels).sum().item()
@@ -223,9 +222,6 @@ class VideoClassifierTrainer:
         num_batches_in_epoch = len(self.val_dataset) // self.batch_size + 1
         with torch.no_grad():
             for batch_idx in range(num_batches_in_epoch):
-                if self.val_batch_queue.empty():
-                    continue
-
                 poses_list, bag_features_list, video_indices, labels = (
                     self.val_batch_queue.get()
                 )
@@ -240,7 +236,6 @@ class VideoClassifierTrainer:
                 total += labels.size(0)
                 compute_time = time.time() - start_time
                 speed = total / compute_time if compute_time > 0 else 0
-                print(loss.item())
                 sys.stdout.write(
                     f"\rEpoch {epoch + 1}/{num_epochs}, Batch {batch_idx + 1}/{num_batches_in_epoch}, Speed: {speed:.2f} samples/sec"
                 )
