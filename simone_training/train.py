@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.nn import TransformerEncoder, TransformerEncoderLayer
 import multiprocessing as mp
 import queue
 import threading
@@ -14,12 +13,10 @@ from torch import multiprocessing as mp
 if __name__ == "__main__":
     mp.set_start_method("spawn")
 
-from torch.utils.data import DataLoader
 from torch.optim import Adam
 import os
 import sys
 from torch.utils.tensorboard import SummaryWriter
-from torch import nn
 
 sys.path.insert(0, os.path.dirname(__file__) + "/..")
 
@@ -89,7 +86,7 @@ class BatchConstructor(threading.Thread):
                 video_idx += 1
 
                 if len(poses_list) >= self.batch_size:
-                    poses_list = torch.cat(poses_list, dim=0)
+                    poses_list = torch.cat(poses_list, dim=0).cuda()
                     bag_features_list = torch.cat(bag_features_list, dim=0).cuda()
                     video_indices = torch.tensor(video_indices, dtype=torch.long).cuda()
                     labels = torch.tensor(labels, dtype=torch.float32).cuda()
