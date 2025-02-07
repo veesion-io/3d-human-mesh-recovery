@@ -276,10 +276,10 @@ class TrackDataset(Dataset):
                         formatted_data["poses"][track_num], axis=2
                     )
 
-        # os.makedirs("inputs", exist_ok=True)
-        # np.save(
-        #     f"inputs/{os.path.splitext(video_name)[0]}_{start_time}.npy", formatted_data
-        # )
+        os.makedirs("inputs", exist_ok=True)
+        np.save(
+            f"inputs/{os.path.splitext(video_name)[0]}_{start_time}.npy", formatted_data
+        )
         # np.save("hands.npy", formatted_data["bag_features"].numpy())
         # print(video_name, start_time)
         # dvsdv
