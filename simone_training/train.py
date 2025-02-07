@@ -78,17 +78,15 @@ class BatchConstructor(threading.Thread):
         while not self.stop_event.is_set():
             try:
                 sample = self.data_queue.get(timeout=1)
-                print(sample)
-                for data in sample:
-                    if data is None:
-                        continue
-                    num_tracks = data["poses"].size(0)
-                    if num_tracks > 0:
-                        poses_list.append(data["poses"])
-                        bag_features_list.append(data["bag_features"])
-                        video_indices.extend([video_idx] * num_tracks)
-                    labels.append(data["label"])
-                    video_idx += 1
+                if sample is None:
+                    continue
+                num_tracks = sample["poses"].size(0)
+                if num_tracks > 0:
+                    poses_list.append(sample["poses"])
+                    bag_features_list.append(sample["bag_features"])
+                    video_indices.extend([video_idx] * num_tracks)
+                labels.append(sample["label"])
+                video_idx += 1
 
                 if len(poses_list) >= self.batch_size:
                     poses_list = torch.cat(poses_list, dim=0)
