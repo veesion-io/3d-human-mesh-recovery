@@ -69,14 +69,26 @@ class BatchConstructor(threading.Thread):
         self.batch_queue = batch_queue
         self.batch_size = batch_size
         self.stop_event = stop_event
-        self.batch = []
 
     def run(self):
+        poses_list, bag_features_list, video_indices, labels = [], [], [], []
+        video_idx = 0
         while not self.stop_event.is_set():
             try:
                 sample = self.data_queue.get(timeout=1)
-                self.batch.append(sample)
-                if len(self.batch) >= self.batch_size:
+
+                for data in sample:
+                    if data is None:
+                        continue
+                    num_tracks = data["poses"].size(0)
+                    if num_tracks > 0:
+                        poses_list.append(data["poses"])
+                        bag_features_list.append(data["bag_features"])
+                        video_indices.extend([video_idx] * num_tracks)
+                    labels.append(data["label"])
+                    video_idx += 1
+
+                if len(poses_list) >= self.batch_size:
                     poses_list = torch.cat(
                         [s["poses"] for s in self.batch], dim=0
                     ).cuda()
@@ -93,7 +105,13 @@ class BatchConstructor(threading.Thread):
                     self.batch_queue.put(
                         (poses_list, bag_features_list, video_indices, labels)
                     )
-                    self.batch = []
+                    poses_list, bag_features_list, video_indices, labels = (
+                        [],
+                        [],
+                        [],
+                        [],
+                    )
+                    video_idx = 0
             except queue.Empty:
                 continue
 
