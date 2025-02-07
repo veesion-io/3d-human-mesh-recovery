@@ -45,7 +45,7 @@ def find_window_label(video_meta_data, window):
     if "Dissimulation sac" not in actions_timespans:
         return False
     return any(
-        compute_timestamp_intersection(timespan, window) > 0.5
+        compute_timestamp_intersection(timespan, window) > 0.7
         for timespan in actions_timespans["Dissimulation sac"]
     )
 
