@@ -190,6 +190,8 @@ class VideoClassifierTrainer:
                 self.optimizer.step()
 
             train_loss += loss.item()
+            print(loss.item())
+
             predictions = (outputs > 0.0).float()
             correct += (predictions == labels).sum().item()
             total += labels.size(0)
@@ -238,6 +240,7 @@ class VideoClassifierTrainer:
                 total += labels.size(0)
                 compute_time = time.time() - start_time
                 speed = total / compute_time if compute_time > 0 else 0
+                print(loss.item())
                 sys.stdout.write(
                     f"\rEpoch {epoch + 1}/{num_epochs}, Batch {batch_idx + 1}/{num_batches_in_epoch}, Speed: {speed:.2f} samples/sec"
                 )
