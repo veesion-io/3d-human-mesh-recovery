@@ -26,7 +26,7 @@ def process_video(video_path, output_file):
     frame_id = 0
     ret, frame = cap.read()
     while ret:
-        results = model.predict(frame, conf=0.4, verbose=False)
+        results = model.predict(frame, conf=0.1, verbose=False)
         boxes = results[0].boxes.xyxy.cpu().numpy()
         classes = results[0].boxes.cls.cpu().numpy()
         confs = results[0].boxes.conf.cpu().numpy()  # Get confidence scores
